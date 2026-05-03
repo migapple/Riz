@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<title>Riz du Monde</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=IM+Fell+English:ital@0;1&display=swap"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{
+  --bg:#060608;
+  --bg2:#0d0d12;
+  --bg3:#15151e;
+  --gold:#c9a84c;
+  --gold2:#e8c97a;
+  --cream:#f0e6d0;
+  --text:#c8cdd8;
+  --muted:#7a8090;
+  --border:#1e1e2e;
+  --accent:#1a1a30;
+  --jade:#5a8a6a;
+  --jade2:#7abf9a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Cormorant Garamond',Georgia,serif;color:var(--text)}
+#app{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+
+.header{padding-top:calc(14px + env(safe-area-inset-top));background:var(--bg);flex-shrink:0;border-bottom:1px solid var(--border)}
+.header-inner{display:flex;align-items:center;justify-content:space-between;padding:0 16px 10px}
+.app-title{font-family:'IM Fell English',serif;font-size:21px;color:var(--gold2);letter-spacing:.04em}
+.lang-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:16px;cursor:pointer;color:var(--text)}
+
+.tabs{display:flex;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:44px;padding:8px 4px;font-size:18px;color:var(--muted);background:none;border:none;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;text-align:center}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+.main{flex:1;overflow-y:auto;padding-bottom:calc(12px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.hidden{display:none!important}
+
+.search-bar{padding:10px 16px 6px;background:var(--bg)}
+.search-input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--cream);font-family:inherit;font-size:15px;outline:none}
+.search-input::placeholder{color:var(--muted)}
+.chips{display:flex;gap:8px;padding:6px 16px 10px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s;letter-spacing:.03em}
+.chip.active{background:var(--accent);border-color:var(--gold);color:var(--gold)}
+
+.cards{padding:0 12px}
+.card{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;cursor:pointer;transition:border-color .2s}
+.card:active{border-color:var(--gold)}
+.riz-img-wrap{width:58px;height:58px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:28px}
+.riz-img-wrap img{width:100%;height:100%;object-fit:cover}
+.riz-img{width:58px;height:58px;object-fit:cover;border-radius:8px}
+.riz-img.loading{opacity:0}
+.card-info{flex:1;min-width:0}
+.card-name{font-family:'IM Fell English',serif;font-size:16px;color:var(--cream);margin-bottom:2px}
+.card-origin{font-size:12px;color:var(--muted);margin-bottom:6px;letter-spacing:.03em}
+.arome-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:2px}
+.arome-fill{height:100%;background:linear-gradient(90deg,#1a2a1a,#3a6a3a,#c9a84c);border-radius:2px}
+.card-badge{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* DETAIL */
+#detailView{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:none;flex-direction:column;overflow:hidden}
+.detail-header{padding-top:calc(14px + env(safe-area-inset-top));background:var(--bg);flex-shrink:0;border-bottom:1px solid var(--border)}
+.detail-header-inner{display:flex;align-items:center;gap:10px;padding:0 16px 10px}
+.back-btn{background:none;border:none;color:var(--gold);font-size:20px;cursor:pointer;padding:4px 8px 4px 0}
+.detail-title{font-family:'IM Fell English',serif;color:var(--gold);font-size:19px;flex:1}
+.detail-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.detail-img-container{width:100%;height:210px;overflow:hidden;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:80px}
+.detail-img-container img{width:100%;height:100%;object-fit:cover}
+.detail-content{padding:16px}
+.detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.meta-tag{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;color:var(--muted)}
+.meta-tag span{color:var(--gold)}
+.detail-section{margin-bottom:16px}
+.detail-section h3{font-family:'IM Fell English',serif;color:var(--gold2);font-size:15px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.detail-section p{font-size:14px;line-height:1.7;color:var(--text)}
+.profil-box{background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:16px}
+.profil-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.profil-label{font-size:12px;color:var(--muted);width:90px;flex-shrink:0}
+.profil-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.profil-fill{height:100%;border-radius:3px}
+.fill-parfum{background:linear-gradient(90deg,#1a2a1a,#3a6a3a,#c9a84c)}
+.fill-texture{background:linear-gradient(90deg,#2a1a2a,#5a3a6a,#c97ae8)}
+.fill-cuisson{background:linear-gradient(90deg,#1a2a2a,#3a6a6a,#7ae8c9)}
+.fill-purete{background:linear-gradient(90deg,#1a2a1a,#3a6a3a,#7ac9e8)}
+.fill-rarete{background:linear-gradient(90deg,#3a2a00,#8a6a00,#e8c97a)}
+.profil-value{font-size:12px;color:var(--gold);width:30px;text-align:right}
+
+.rank-list{padding:12px}
+.rank-item{display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer}
+.rank-num{width:28px;text-align:center;font-family:'IM Fell English',serif;color:var(--muted);font-size:18px;flex-shrink:0}
+.rank-num.top3{color:var(--gold);font-size:20px}
+.rank-emoji{font-size:22px;flex-shrink:0}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-family:'IM Fell English',serif;color:var(--cream);font-size:15px}
+.rank-region{font-size:11px;color:var(--muted)}
+.rank-bar-wrap{width:90px;flex-shrink:0}
+.rank-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:3px}
+.rank-fill{height:100%;background:linear-gradient(90deg,#1a2a1a,#c9a84c);border-radius:3px}
+.rank-score{font-size:11px;color:var(--gold);text-align:right}
+
+#mapView{display:flex;flex-direction:column;flex:1;overflow:hidden}
+#mapContainer{flex:1;min-height:0}
+#map{width:100%;height:100%}
+.leaflet-popup-content-wrapper{background:var(--bg2)!important;border:1px solid var(--gold)!important;border-radius:8px!important;color:var(--cream)!important}
+.leaflet-popup-tip{background:var(--bg2)!important}
+.popup-name{font-family:'IM Fell English',serif;font-size:14px;color:var(--gold);margin-bottom:4px}
+.popup-btn{background:var(--accent);border:1px solid var(--gold);border-radius:4px;color:var(--gold);padding:4px 10px;font-size:12px;margin-top:6px;cursor:pointer;font-family:inherit;display:block;width:100%;text-align:center}
+
+.recette-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin:0 12px 10px;cursor:pointer;transition:border-color .2s}
+.recette-card:active{border-color:var(--gold)}
+.recette-card-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.recette-emoji{font-size:28px}
+.recette-title{font-family:'IM Fell English',serif;font-size:17px;color:var(--cream)}
+.recette-origin{font-size:12px;color:var(--muted)}
+.recette-meta{display:flex;gap:12px;font-size:11px;color:var(--muted)}
+.recette-meta span{color:var(--gold)}
+
+#recetteDetail{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:none;flex-direction:column;overflow:hidden}
+.recette-detail-header{padding-top:calc(14px + env(safe-area-inset-top));background:var(--bg);flex-shrink:0;border-bottom:1px solid var(--border)}
+.recette-detail-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.recette-section{margin-bottom:20px}
+.recette-section h3{font-family:'IM Fell English',serif;color:var(--gold2);font-size:16px;margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.ingredient-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text)}
+.ingredient-item::before{content:'•';color:var(--gold);flex-shrink:0}
+.step-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.step-num{width:22px;height:22px;background:var(--accent);border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--gold);flex-shrink:0;margin-top:2px}
+.step-text{font-size:14px;color:var(--text);line-height:1.6;flex:1}
+.conseil-box{background:var(--bg3);border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;color:var(--text);font-style:italic}
+
+.quiz-container{padding:16px}
+.quiz-score-bar{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;text-align:center}
+.quiz-score-num{font-family:'IM Fell English',serif;font-size:36px;color:var(--gold)}
+.quiz-score-label{font-size:12px;color:var(--muted)}
+.quiz-question{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
+.quiz-q-text{font-family:'IM Fell English',serif;font-size:17px;color:var(--cream);margin-bottom:14px;line-height:1.5}
+.quiz-answers{display:flex;flex-direction:column;gap:8px}
+.quiz-answer{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;color:var(--text);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s}
+.quiz-answer.correct{background:#1a3a1f;border-color:#4a7c59;color:#8abf9a}
+.quiz-answer.wrong{background:#3a1a1a;border-color:#7c4a4a;color:#bf8a8a}
+.quiz-answer.revealed{pointer-events:none}
+.quiz-next{width:100%;background:var(--accent);border:1px solid var(--gold);border-radius:8px;padding:12px;font-family:'IM Fell English',serif;font-size:16px;color:var(--gold);cursor:pointer;margin-top:8px;display:none}
+.quiz-reset{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:inherit;font-size:14px;color:var(--muted);cursor:pointer;margin-top:8px}
+
+.histoire-container{padding:12px}
+.histoire-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.histoire-card-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.histoire-emoji{font-size:26px;flex-shrink:0}
+.histoire-period{font-family:'IM Fell English',serif;font-size:15px;color:var(--gold2)}
+.histoire-era{font-size:11px;color:var(--muted)}
+.histoire-text{font-size:13px;line-height:1.7;color:var(--text)}
+
+.apps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:12px}
+.app-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.app-icon{width:58px;height:58px;border-radius:12px;background:var(--bg3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:26px}
+.app-icon img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.app-name{font-size:10px;color:var(--muted);text-align:center;line-height:1.3}
+.apps-section-title{font-family:'IM Fell English',serif;color:var(--gold);font-size:16px;padding:12px 16px 4px;border-bottom:1px solid var(--border);margin-bottom:4px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="header">
+    <div class="header-inner">
+      <div class="app-title" id="appTitleEl">🌾 Riz du Monde</div>
+      <button class="lang-btn" onclick="toggleLang()">🇬🇧</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('list',this)">🌾</button>
+      <button class="tab" onclick="switchTab('rank',this)">🏆</button>
+      <button class="tab" onclick="switchTab('map',this)">🗺️</button>
+      <button class="tab" onclick="switchTab('recettes',this)">🍽️</button>
+      <button class="tab" onclick="switchTab('histoire',this)">📜</button>
+      <button class="tab" onclick="switchTab('quiz',this)">❓</button>
+      <button class="tab" onclick="switchTab('apps',this)">📱</button>
+    </div>
+  </div>
+
+  <div id="listView" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="search-bar">
+      <input class="search-input" id="searchInput" placeholder="Rechercher un riz..." oninput="filterCards()"/>
+    </div>
+    <div class="chips" id="chipsContainer"></div>
+    <div class="main" id="cardsContainer"></div>
+  </div>
+
+  <div id="rankView" class="main hidden">
+    <div class="rank-list" id="rankList"></div>
+  </div>
+
+  <div id="mapView" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div id="mapContainer" style="flex:1;min-height:0">
+      <div id="map" style="width:100%;height:100%"></div>
+    </div>
+  </div>
+
+  <div id="recettesView" class="main hidden">
+    <div id="recettesList"></div>
+  </div>
+
+  <div id="histoireView" class="main hidden">
+    <div class="histoire-container" id="histoireContainer"></div>
+  </div>
+
+  <div id="quizView" class="main hidden">
+    <div class="quiz-container" id="quizContainer"></div>
+  </div>
+
+  <div id="appsView" class="main hidden">
+    <div id="appsList"></div>
+  </div>
+
+  <div id="detailView">
+    <div class="detail-header">
+      <div class="detail-header-inner">
+        <button class="back-btn" onclick="closeDetail()">←</button>
+        <div class="detail-title" id="detailTitle"></div>
+      </div>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+
+  <div id="recetteDetail">
+    <div class="recette-detail-header">
+      <div class="detail-header-inner">
+        <button class="back-btn" onclick="closeRecette()">←</button>
+        <div class="detail-title" id="recetteTitleEl"></div>
+      </div>
+    </div>
+    <div class="recette-detail-body" id="recetteBody"></div>
+  </div>
+
+</div>
+<script>
+// ===================== DONNÉES =====================
+const RIZ = [
+  {id:1,e:'🌸',fr:{n:'Riz Basmati',o:'Inde / Pakistan (Himalaya)',d:'Le riz basmati est le roi des riz à grains longs, cultivé depuis des millénaires au pied de l\'Himalaya dans les plaines du Punjab indien et pakistanais. Son nom signifie "parfumé" en hindi. Ses grains extralong s\'allongent encore à la cuisson (jusqu\'à 8 mm) sans coller. Son arôme floral et noiseté caractéristique provient de la molécule 2-acétyl-1-pyrroline, également présente dans le pandanus. Le basmati indien d\'appellation "1121 Extra Long" est le plus réputé. IGP depuis 2016. Indispensable dans les biryanis et pilafs.'},en:{n:'Basmati Rice',o:'India / Pakistan (Himalaya)',d:'Basmati rice is the king of long-grain rices, cultivated for millennia at the foot of the Himalayas in the Punjab plains of India and Pakistan. Its name means "fragrant" in Hindi. Its extra-long grains elongate even further during cooking (up to 8 mm) without sticking. Its characteristic floral and nutty aroma comes from the molecule 2-acetyl-1-pyrroline, also found in pandan. Indian "1121 Extra Long" basmati is the most prestigious. PGI since 2016. Essential in biryanis and pilafs.'},region:'Asie',wiki:'Basmati',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Brun_ris.jpg/960px-Brun_ris.jpg',parfum:95,texture:88,cuisson:92,purete:90,rarete:25,type:'Long'},
+  {id:2,e:'🌿',fr:{n:'Riz Jasmin (Hom Mali)',o:'Thaïlande',d:'Le riz thaï au jasmin, ou Khao Dawk Mali 105 (KDML 105), est la variété la plus cultivée et exportée de Thaïlande. Son arôme délicat évoquant la fleur de jasmin et la pandan provient comme le basmati de la molécule 2-acétyl-1-pyrroline. Légèrement collant en bouche contrairement au basmati, il présente une texture moelleuse et fondante idéale pour accompagner les currys thaïs et la cuisine asiatique du Sud-Est. La Thaïlande est le premier exportateur mondial de riz jasmin. Récompensé "Meilleur riz du monde" à plusieurs reprises.'},en:{n:'Jasmine Rice (Hom Mali)',o:'Thailand',d:'Thai jasmine rice, or Khao Dawk Mali 105 (KDML 105), is the most cultivated and exported variety from Thailand. Its delicate aroma evoking jasmine and pandan flowers comes from the same molecule as basmati: 2-acetyl-1-pyrroline. Slightly sticky compared to basmati, it has a soft, melting texture ideal for accompanying Thai curries and Southeast Asian cuisine. Thailand is the world\'s leading jasmine rice exporter. Awarded "World\'s Best Rice" on multiple occasions.'},region:'Asie',wiki:'Jasmine rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Thai_jasmine_rice_uncooked.jpg/500px-Thai_jasmine_rice_uncooked.jpg',parfum:92,texture:85,cuisson:88,purete:88,rarete:20,type:'Long'},
+  {id:3,e:'⚪',fr:{n:'Riz Arborio',o:'Italie (Piémont)',d:'L\'arborio est le riz à risotto par excellence, cultivé dans les rizières du Piémont et de Lombardie depuis le XVe siècle. Son grain perlé, court et large, est riche en amidon de surface (amylopectine) qui libère à la cuisson une crème naturelle donnant au risotto son onctuosité signature. Son cœur reste ferme (al dente) lorsque l\'extérieur est crémeux. La technique de cuisson par absorption progressive du bouillon et mantecatura finale au beurre et parmesan est essentielle. Il supporte jusqu\'à 18 minutes de cuisson progressive.'},en:{n:'Arborio Rice',o:'Italy (Piedmont)',d:'Arborio is the quintessential risotto rice, cultivated in the rice fields of Piedmont and Lombardy since the 15th century. Its pearly, short, wide grain is rich in surface starch (amylopectin) that releases a natural cream during cooking, giving risotto its signature smoothness. The heart remains firm (al dente) while the outside is creamy. The technique of progressive broth absorption and final mantecatura with butter and parmesan is essential. It can withstand up to 18 minutes of progressive cooking.'},region:'Europe',wiki:'Arborio rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Arborio_Rice_%283769693295%29.jpg/500px-Arborio_Rice_%283769693295%29.jpg',parfum:72,texture:98,cuisson:85,purete:85,rarete:30,type:'Rond'},
+  {id:4,e:'⬛',fr:{n:'Riz Noir Interdit (Riz Empereur)',o:'Chine (Zhejiang)',d:'Le riz noir dit "interdit" (Hei Mi) était réservé exclusivement à l\'Empereur de Chine dans l\'Antiquité, sous peine de mort pour quiconque d\'autre en consommait — d\'où son surnom. Sa couleur noire intense vire au violet profond à la cuisson sous l\'effet du bain d\'eau. Riche en anthocyanes (le même pigment que les myrtilles et le chou rouge), il est l\'un des riz les plus nutritifs au monde. Son goût est terreux, légèrement noiseté, avec une texture moelleuse. Très en vogue dans la gastronomie contemporaine et la cuisine végane.'},en:{n:'Forbidden Black Rice (Emperor\'s Rice)',o:'China (Zhejiang)',d:'So-called "forbidden" black rice (Hei Mi) was reserved exclusively for the Emperor of China in antiquity, with death as punishment for anyone else who consumed it — hence its nickname. Its intense black color turns deep purple when cooked in water. Rich in anthocyanins (the same pigment as blueberries and red cabbage), it is one of the world\'s most nutritious rices. Its taste is earthy, slightly nutty, with a soft texture. Very popular in contemporary gastronomy and vegan cuisine.'},region:'Asie',wiki:'Black rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Black_rice_01.JPG/500px-Black_rice_01.JPG',parfum:80,texture:82,cuisson:78,purete:88,rarete:65,type:'Spécial'},
+  {id:5,e:'🔴',fr:{n:'Riz Rouge de Camargue',o:'France (Bouches-du-Rhône)',d:'Le riz rouge de Camargue est une création typiquement française, produite dans le delta du Rhône depuis les années 1980. Sa couleur rouge-brique provient d\'une mutation naturelle qui préserve le son rouge riche en anthocyanes. La Camargue, seule grande rizière d\'Europe occidentale, bénéficie d\'un ensoleillement exceptionnel et d\'une eau pure. IGP depuis 2000, ce riz à grains mi-longs présente un goût de noisette prononcé, une texture ferme et une grande richesse en fibres. Cuisson longue (40 min) mais nutritive. Très prisé dans la cuisine provençale moderne.'},en:{n:'Red Camargue Rice',o:'France (Bouches-du-Rhône)',d:'Red Camargue rice is a typically French creation, produced in the Rhône delta since the 1980s. Its brick-red color comes from a natural mutation that preserves the red bran rich in anthocyanins. The Camargue, the only major rice field in Western Europe, benefits from exceptional sunshine and pure water. PGI since 2000, this medium-grain rice has a pronounced hazelnut taste, firm texture and high fiber content. Long cooking time (40 min) but nutritious. Highly prized in modern Provençal cuisine.'},region:'Europe',wiki:'Camargue rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Riz_rouge_de_Camargue.jpg/960px-Riz_rouge_de_Camargue.jpg',parfum:82,texture:80,cuisson:72,purete:85,rarete:55,type:'Complet'},
+  {id:6,e:'🟡',fr:{n:'Riz Koshihikari',o:'Japon (Niigata)',d:'Le Koshihikari est le riz le plus cultivé du Japon et le symbole même de la culture rizicole nippone. Créé en 1956 à l\'Université de Fukui par croisement, il représente aujourd\'hui plus de 35% de la production japonaise. Ses grains courts et perlés, légèrement glutineux, développent à la cuisson une texture collante-fondante unique appelée "mochi-mochi" en japonais. Le riz de Niigata (Uonuma Koshihikari), cultivé dans les plaines fertiles arrosées par la fonte des neiges du Mont Echigo, est considéré comme le meilleur du Japon. Base indispensable des sushis, onigiri et donburi.'},en:{n:'Koshihikari Rice',o:'Japan (Niigata)',d:'Koshihikari is the most cultivated rice in Japan and the very symbol of Japanese rice culture. Created in 1956 at Fukui University through crossbreeding, it now represents over 35% of Japanese production. Its short, pearly, slightly glutinous grains develop a unique sticky-melting texture at cooking called "mochi-mochi" in Japanese. Niigata rice (Uonuma Koshihikari), grown in the fertile plains watered by snowmelt from Mount Echigo, is considered the best in Japan. Essential base for sushi, onigiri and donburi.'},region:'Asie',wiki:'Koshihikari',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Koshihikari.jpg/960px-Koshihikari.jpg',parfum:90,texture:95,cuisson:90,purete:92,rarete:60,type:'Rond'},
+  {id:7,e:'🌾',fr:{n:'Riz Carnaroli',o:'Italie (Vercelli)',d:'Le Carnaroli, surnommé "le roi des riz italiens" par les chefs, est la variété préférée des grands restaurants étoilés pour le risotto. Créé en 1945 par l\'agronome Emiliano Pozzi en croisant le Vialone et le Lencino, il combine un grain plus grand que l\'arborio, une teneur en amidon élevée et une résistance à la surcuisson exceptionnelle. Sa texture finale est plus ferme et définie que l\'arborio tout en restant crémeuse. Il supporte jusqu\'à 20 minutes de cuisson. Produit en quantités limitées dans la province de Vercelli. Le choix des grands chefs : Gualtiero Marchesi, Massimo Bottura.'},en:{n:'Carnaroli Rice',o:'Italy (Vercelli)',d:'Carnaroli, nicknamed "the king of Italian rices" by chefs, is the preferred variety of great starred restaurants for risotto. Created in 1945 by agronomist Emiliano Pozzi by crossing Vialone and Lencino, it combines a larger grain than arborio, high starch content and exceptional resistance to overcooking. Its final texture is firmer and more defined than arborio while remaining creamy. It can withstand up to 20 minutes of cooking. Produced in limited quantities in the province of Vercelli. The choice of great chefs: Gualtiero Marchesi, Massimo Bottura.'},region:'Europe',wiki:'Carnaroli',wt:'',parfum:75,texture:97,cuisson:90,purete:88,rarete:70,type:'Rond'},
+  {id:8,e:'🌫️',fr:{n:'Riz Glutineux (Riz Gluant)',o:'Asie du Sud-Est (Thaïlande / Laos)',d:'Le riz gluant (Khao Niao en thaï), ou riz glutineux, est la nourriture de base des populations du nord de la Thaïlande et du Laos. Malgré son nom, il ne contient pas de gluten : sa "gluance" provient d\'une quasi-absence d\'amylose au profit de l\'amylopectine (95-100%). Il se consomme pétri à la main en petites boules pour saucer les plats. Sa cuisson traditionnelle se fait à la vapeur dans un panier en bambou (40 min). Il est aussi la base de nombreux desserts asiatiques (mango sticky rice, mochi, zongzi chinois). Profondément ancré dans la culture Lao, pays où il est considéré comme identité nationale.'},en:{n:'Glutinous Rice (Sticky Rice)',o:'Southeast Asia (Thailand / Laos)',d:'Glutinous rice (Khao Niao in Thai), or sticky rice, is the staple food of northern Thai and Laotian populations. Despite its name, it contains no gluten: its "stickiness" comes from a near-absence of amylose in favor of amylopectin (95-100%). It is eaten kneaded by hand into small balls to scoop up dishes. Traditional cooking is done by steaming in a bamboo basket (40 min). It is also the base of many Asian desserts (mango sticky rice, mochi, Chinese zongzi). Deeply rooted in Lao culture, a country where it is considered a national identity.'},region:'Asie',wiki:'Glutinous rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/2014_uncooked_Thai_glutinous_rice.jpg/500px-2014_uncooked_Thai_glutinous_rice.jpg',parfum:78,texture:96,cuisson:80,purete:82,rarete:25,type:'Glutineux'},
+  {id:9,e:'🟤',fr:{n:'Riz Sauvage (Zizania)',o:'Canada / États-Unis (Grands Lacs)',d:'Le riz sauvage (Zizania aquatica) n\'est pas botaniquement un riz : c\'est une graminée aquatique d\'Amérique du Nord. Récolté depuis des millénaires par les nations Ojibwés et Menominee dans les lacs et rivières des Grands Lacs, il était sacré et portait le nom de "Manoomin" (bonne baie). Ses grains noirs allongés ont un goût très prononcé de noisette, de fumé et de champignons. Sa texture reste ferme même après cuisson. Très nutritif (plus de protéines que le riz blanc), il est aujourd\'hui cultivé mécaniquement au Minnesota et en Californie. Patrimoine immatériel des Premières Nations.'},en:{n:'Wild Rice (Zizania)',o:'Canada / USA (Great Lakes)',d:'Wild rice (Zizania aquatica) is not botanically a rice: it is an aquatic grass from North America. Harvested for millennia by the Ojibwe and Menominee nations in the lakes and rivers of the Great Lakes, it was sacred and called "Manoomin" (good berry). Its elongated black grains have a very pronounced taste of hazelnuts, smoke and mushrooms. Its texture remains firm even after cooking. Very nutritious (more protein than white rice), it is now mechanically cultivated in Minnesota and California. Intangible heritage of First Nations.'},region:'Amériques',wiki:'Wild rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Zizania_palustris_macro.jpg/960px-Zizania_palustris_macro.jpg',parfum:88,texture:78,cuisson:70,purete:92,rarete:72,type:'Sauvage'},
+  {id:10,e:'🌊',fr:{n:'Riz de Camargue Blanc (IGP)',o:'France (Bouches-du-Rhône)',d:'Le riz blanc de Camargue IGP est le riz français par excellence. Cultivé dans le delta du Rhône depuis le XVIe siècle (introduction par les Sarrasins selon la tradition), ses 20 000 hectares de rizières constituent le paysage emblématique de la Camargue. Sa culture bio extensive respecte les flamants roses, les aigrettes et les taureaux. Le riz de Camargue se décline en blanc (long ou rond), semi-complet et complet. Sa flaveur délicate, légèrement florale, et sa texture tendre en font un riz polyvalent. Les riziculteurs camarguais produisent environ 100 000 tonnes par an.'},en:{n:'Camargue White Rice (PGI)',o:'France (Bouches-du-Rhône)',d:'Camargue white PGI rice is the French rice par excellence. Cultivated in the Rhône delta since the 16th century (introduction by Saracens according to tradition), its 20,000 hectares of rice fields form the iconic landscape of the Camargue. Its extensive organic farming respects flamingos, egrets and bulls. Camargue rice comes in white (long or round), semi-wholegrain and wholegrain varieties. Its delicate, slightly floral flavor and tender texture make it a versatile rice. Camargue rice growers produce around 100,000 tonnes per year.'},region:'Europe',wiki:'Camargue rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Riz_de_Camargue_-_3_couleurs.jpg/960px-Riz_de_Camargue_-_3_couleurs.jpg',parfum:75,texture:80,cuisson:88,purete:85,rarete:20,type:'Long'},
+  {id:11,e:'🟠',fr:{n:'Riz Valencia (Bomba)',o:'Espagne (Valence)',d:'Le riz Bomba de Valence est la variété reine pour la paella, cultivée dans l\'Albufera — la lagune côtière de Valence classée parc naturel. Son grain rond et court a la propriété extraordinaire d\'absorber deux à trois fois son volume en bouillon tout en conservant sa forme et sa fermeté. À la différence de l\'arborio, l\'amidon du bomba ne se libère pas en crème : le résultat est un riz distinct grain à grain, gorgé de saveurs. Produit en quantités limitées, il est plus coûteux que les autres riz à paella. Le "socarrat" (fond caramélisé croustillant) ne s\'obtient bien qu\'avec le bomba.'},en:{n:'Valencia Rice (Bomba)',o:'Spain (Valencia)',d:'Valencia Bomba rice is the queen variety for paella, cultivated in the Albufera — Valencia\'s coastal lagoon classified as a nature park. Its round, short grain has the extraordinary property of absorbing two to three times its volume in broth while maintaining its shape and firmness. Unlike arborio, bomba starch does not release cream: the result is grain-by-grain distinct rice, full of flavor. Produced in limited quantities, it is more expensive than other paella rices. The "socarrat" (crispy caramelized bottom) is best achieved with bomba.'},region:'Europe',wiki:'Bomba rice',wt:'https://upload.wikimedia.org/wikipedia/commons/f/fc/Arroz_Valenciana_filipino_style.jpg',parfum:80,texture:95,cuisson:88,purete:88,rarete:65,type:'Rond'},
+  {id:12,e:'🌙',fr:{n:'Riz Vénéré (Riz Noir de Sicile)',o:'Italie (Sicile)',d:'Le Riso Venere est une variété hybride italienne créée en 1997 par les chercheurs de l\'ENTE Nazionale Risi à partir d\'un croisement entre riz noir chinois et riz blanc italien. Son grain est noir profond, presque violacé, avec un parfum intense de pain de mie grillé, noiseté et légèrement floral. Sa richesse en anthocyanes en fait l\'un des riz les plus antioxydants. Cultivé principalement en Piémont et en Sardaigne, il est devenu en vingt ans l\'un des riz gastronomiques italiens les plus exportés. Texture ferme et légèrement croquante après cuisson. Chef favori : Heinz Beck.'},en:{n:'Venere Rice (Black Rice of Sicily)',o:'Italy (Sicily)',d:'Riso Venere is an Italian hybrid variety created in 1997 by researchers at the National Rice Institute through crossbreeding Chinese black rice and Italian white rice. Its grain is deep black, almost violet, with an intense aroma of toasted bread, hazelnuts and slight florals. Its richness in anthocyanins makes it one of the most antioxidant rices. Cultivated mainly in Piedmont and Sardinia, it has become in twenty years one of the most exported Italian gastronomic rices. Firm and slightly crunchy texture after cooking. Chef favorite: Heinz Beck.'},region:'Europe',wiki:'Venus rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Risotto_with_speck_and_goat_cheese_%286101067436%29.jpg/500px-Risotto_with_speck_and_goat_cheese_%286101067436%29.jpg',parfum:85,texture:84,cuisson:78,purete:88,rarete:68,type:'Spécial'},
+  {id:13,e:'🌿',fr:{n:'Riz Baldo',o:'Turquie / Italie (Vercelli)',d:'Le riz Baldo est une variété italienne à gros grains créée en 1977, aujourd\'hui massivement cultivée en Turquie où il est devenu le riz national. En Italie, il est le deuxième choix pour le risotto après le Carnaroli. En Turquie, il est la base du pilaf, des soupes de mariage (düğün çorbası) et du riz au four (fırın sütlaç). Son grain large et transparent a une texture ferme et ne colle pas, tout en absorbant parfaitement les saveurs du bouillon. La Turquie est aujourd\'hui le premier producteur mondial de riz Baldo, notamment dans la région de Bolu et du Marmara.'},en:{n:'Baldo Rice',o:'Turkey / Italy (Vercelli)',d:'Baldo rice is an Italian large-grain variety created in 1977, now massively cultivated in Turkey where it has become the national rice. In Italy, it is the second choice for risotto after Carnaroli. In Turkey, it is the base of pilaf, wedding soups (düğün çorbası) and baked rice pudding (fırın sütlaç). Its large, transparent grain has a firm texture and does not stick, while perfectly absorbing the flavors of the broth. Turkey is now the world\'s leading producer of Baldo rice, notably in the Bolu and Marmara regions.'},region:'Asie',wiki:'Baldo rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Vankahvalti.jpg/960px-Vankahvalti.jpg',parfum:72,texture:85,cuisson:90,purete:86,rarete:30,type:'Long'},
+  {id:14,e:'🌸',fr:{n:'Riz Pouva (Riz de Thaïlande Rouge)',o:'Thaïlande / Cambodge',d:'Le riz rouge thaï Pouva, également cultivé au Cambodge sous le nom "Malys Angkor", est une variété traditionnelle à péricarpe rouge riche en anthocyanes. Sa culture ancestrale dans les plaines inondables du Mékong remonte à plusieurs millénaires. Moins populaire que le riz jasmin, il bénéficie d\'une renaissance gastronomique grâce à ses qualités nutritionnelles exceptionnelles (fibres, antioxydants, index glycémique bas). Le "Cambodian Red Rice" a remporté de nombreux prix internationaux. Sa texture est ferme et légèrement croquante avec un goût de noisette et de terre.'},en:{n:'Thai Red Rice (Pouva)',o:'Thailand / Cambodia',d:'Thai Pouva red rice, also grown in Cambodia as "Malys Angkor", is a traditional variety with anthocyanin-rich red pericarp. Its ancestral cultivation in the floodplains of the Mekong dates back several millennia. Less popular than jasmine rice, it is experiencing a gastronomic revival thanks to its exceptional nutritional qualities (fiber, antioxidants, low glycemic index). The "Cambodian Red Rice" has won numerous international awards. Its texture is firm and slightly crunchy with a nutty and earthy taste.'},region:'Asie',wiki:'Red rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Thai_jasmine_rice_uncooked.jpg/500px-Thai_jasmine_rice_uncooked.jpg',parfum:78,texture:82,cuisson:75,purete:88,rarete:58,type:'Complet'},
+  {id:15,e:'🏔️',fr:{n:'Riz de Prestige Khao Hom Nil (Bleu)',o:'Thaïlande (Chiang Mai)',d:'Le Khao Hom Nil (riz bleu parfumé) est une variété rarissime cultivée uniquement dans les hautes terres de Chiang Mai en Thaïlande. Sa couleur bleu-violet intense, naturelle, provient d\'anthocyanes concentrées dans le son. Vire au violet profond à la cuisson. Son arôme est extraordinaire : floral, pandanus et popcorn. Produit en quantités infimes par les tribus montagnardes Karen et Hmong dans une agriculture traditionnelle sans intrants. Prix souvent supérieur à 50€/kg. Sa texture à la cuisson est délicate et légèrement crémeuse. Sert dans les cérémonies de mariage thaïlandais.'},en:{n:'Khao Hom Nil Blue Prestige Rice',o:'Thailand (Chiang Mai)',d:'Khao Hom Nil (blue fragrant rice) is an extremely rare variety cultivated only in the highlands of Chiang Mai, Thailand. Its intense, natural blue-violet color comes from anthocyanins concentrated in the bran. Turns deep purple when cooked. Its aroma is extraordinary: floral, pandan and popcorn. Produced in tiny quantities by Karen and Hmong hill tribes in traditional farming without inputs. Price often above €50/kg. Its cooking texture is delicate and slightly creamy. Served at Thai wedding ceremonies.'},region:'Asie',wiki:'Thai rice varieties',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Tranplant-rice-tahiland.JPG/500px-Tranplant-rice-tahiland.JPG',parfum:98,texture:88,cuisson:82,purete:95,rarete:98,type:'Spécial'},
+  {id:16,e:'🌾',fr:{n:'Riz Paddy Long Grain (USA)',o:'États-Unis (Arkansas / Louisiane)',d:'Les États-Unis sont le 3e exportateur mondial de riz et le premier fournisseur de l\'Amérique latine et des Caraïbes. La "Rice Belt" s\'étend de l\'Arkansas (1er État producteur) au Texas en passant par la Louisiane et le Mississippi. Le riz long grain américain, essentiellement des variétés Cypress, Wells et CL151, est cultivé mécaniquement sur de grandes exploitations irriguées. Goût neutre et texture non collante : idéal pour les cuisines cajun et créole (jambalaya, gumbo). Les États-Unis ont aussi développé une variété parfumée (Della) imitant le basmati. 10 millions de tonnes/an.'},en:{n:'Long Grain Paddy Rice (USA)',o:'United States (Arkansas / Louisiana)',d:'The United States is the world\'s 3rd largest rice exporter and the leading supplier to Latin America and the Caribbean. The "Rice Belt" stretches from Arkansas (the top producing state) to Texas via Louisiana and Mississippi. American long-grain rice, mainly Cypress, Wells and CL151 varieties, is mechanically cultivated on large irrigated farms. Neutral taste and non-sticky texture: ideal for Cajun and Creole cuisines (jambalaya, gumbo). The US has also developed a fragrant variety (Della) imitating basmati. 10 million tonnes/year.'},region:'Amériques',wiki:'Rice production in the United States',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Jambalaya_-_5657377377.jpg/500px-Jambalaya_-_5657377377.jpg',parfum:62,texture:75,cuisson:92,purete:80,rarete:10,type:'Long'},
+  {id:17,e:'🌿',fr:{n:'Riz Originario (Riz Rond d\'Espagne)',o:'Espagne (Valence)',d:'L\'Originario est la plus ancienne variété de riz cultivée en Espagne, introduite par les Maures au VIIIe siècle dans les plaines de l\'Albufera de Valence. Grain très court et rond, il absorbe rapidement les liquides et libère beaucoup d\'amidon. Traditionnellement utilisé pour l\'arroz con leche (riz au lait), les potages de riz et les plats en sauce. Très différent du Bomba, il colle et devient fondant. La production d\'Originario est en déclin face au Bomba et au Sénia. Il reste le riz des desserts et des soupes traditionnelles espagnoles. Présent dans la cuisine valencienne depuis 1200 ans.'},en:{n:'Originario Rice (Spanish Round Rice)',o:'Spain (Valencia)',d:'Originario is the oldest rice variety cultivated in Spain, introduced by the Moors in the 8th century in the Albufera plains of Valencia. Very short and round grain, it rapidly absorbs liquids and releases a lot of starch. Traditionally used for arroz con leche (rice pudding), rice soups and sauced dishes. Very different from Bomba, it sticks and becomes melting. Originario production is declining in favor of Bomba and Sénia. It remains the rice of traditional Spanish desserts and soups. Present in Valencian cuisine for 1,200 years.'},region:'Europe',wiki:'Rice in Spain',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Bomba-Rice.jpg/500px-Bomba-Rice.jpg',parfum:70,texture:88,cuisson:82,purete:78,rarete:55,type:'Rond'},
+  {id:18,e:'🌑',fr:{n:'Riz Noir Kalijira (Bangladesh)',o:'Bangladesh / Bengale',d:'Le Kalijira est un riz parfumé à grains courts originaire du Bangladesh et du Bengale occidental. Son nom signifie "petite graine de cumin" en bengali. Surnommé "Prince des riz" au Bangladesh, c\'est le riz traditionnel des fêtes et cérémonies religieuses. Ses petits grains noirs à cœur blanc dégagent un arôme intense évoquant la noisette et le popcorn, comparable au basmati mais différent. Très peu cultivé hors du Bangladesh. Sa texture à la cuisson est ferme, granuleuse et légèrement collante. Servi traditionnellement lors de Eid et des festivals hindous de Durga Puja.'},en:{n:'Kalijira Black Rice (Bangladesh)',o:'Bangladesh / Bengal',d:'Kalijira is a short-grain fragrant rice originating from Bangladesh and West Bengal. Its name means "little cumin seed" in Bengali. Nicknamed the "Prince of Rices" in Bangladesh, it is the traditional rice of festivals and religious ceremonies. Its small black grains with white hearts release an intense aroma evoking hazelnuts and popcorn, comparable to basmati but different. Very little cultivated outside Bangladesh. Its cooking texture is firm, grainy and slightly sticky. Traditionally served during Eid and Hindu Durga Puja festivals.'},region:'Asie',wiki:'Kalijira rice',wt:'',parfum:90,texture:80,cuisson:75,purete:85,rarete:85,type:'Spécial'},
+  {id:19,e:'🟢',fr:{n:'Riz Brun Complet (Brown Rice)',o:'Mondial (Asie, Amériques)',d:'Le riz brun ou complet est simplement du riz décortiqué dont on a conservé le son et le germe. Ce son ocre-doré est riche en fibres, vitamines B, magnésium et antioxydants. Sa cuisson est plus longue (40-45 min) et sa texture plus ferme que le riz blanc. Son goût de noisette et légèrement terreux est plus prononcé. L\'OMS et les nutritionnistes le recommandent fortement face à l\'épidémie de diabète de type 2, car son index glycémique (50-55) est bien inférieur au riz blanc (70-80). La variétés Calrose Brown (Californie), Akitakomachi Brown (Japon) et Basmati complet sont les plus appréciées.'},en:{n:'Brown Rice (Wholegrain)',o:'Worldwide (Asia, Americas)',d:'Brown or whole rice is simply hulled rice that has retained its bran and germ. This golden-ochre bran is rich in fiber, B vitamins, magnesium and antioxidants. Cooking time is longer (40-45 min) and texture firmer than white rice. Its nutty and slightly earthy taste is more pronounced. The WHO and nutritionists strongly recommend it against the type 2 diabetes epidemic, as its glycemic index (50-55) is well below white rice (70-80). Calrose Brown (California), Akitakomachi Brown (Japan) and wholegrain basmati are the most appreciated varieties.'},region:'Asie',wiki:'Brown rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Brownrice.jpg/500px-Brownrice.jpg',parfum:78,texture:80,cuisson:75,purete:90,rarete:15,type:'Complet'},
+  {id:20,e:'🌺',fr:{n:'Riz Vialone Nano',o:'Italie (Vérone / Mantova)',d:'Le Vialone Nano est le riz IGP de la Vénitie, cultivé dans les provinces de Vérone et Mantova depuis le XVIe siècle. Bénéficiant du premier IGP accordé à un riz en Europe (1996), il est la fierté culinaire de la Vénétie. Son grain court et arrondi (nano = petit) est plus riche en amidon que le Carnaroli mais plus résistant que l\'Arborio. Il donne des risottos d\'une onctuosité exceptionnelle, caractérisés par une consistance "fluide" que les Vénitiens appellent "all\'onda" (comme une vague). Base du célèbre "risi e bisi" vénitien. Produit en quantités très limitées.'},en:{n:'Vialone Nano Rice',o:'Italy (Verona / Mantova)',d:'Vialone Nano is the PGI rice of Veneto, cultivated in the provinces of Verona and Mantova since the 16th century. Holding the first PGI granted to a rice in Europe (1996), it is Veneto\'s culinary pride. Its short, rounded grain (nano = small) is richer in starch than Carnaroli but more resistant than Arborio. It produces risottos of exceptional smoothness, characterized by a "fluid" consistency that Venetians call "all\'onda" (like a wave). Base of the famous Venetian "risi e bisi". Produced in very limited quantities.'},region:'Europe',wiki:'Vialone Nano',wt:'',parfum:76,texture:96,cuisson:88,purete:86,rarete:75,type:'Rond'},
+  {id:21,e:'🌿',fr:{n:'Riz De La Bringhe (Riz des Philippines)',o:'Philippines (Ilocos Norte)',d:'Le riz de la bringhe est la base d\'un plat festif philippin ancestral (la bringhe), considéré comme l\'équivalent philippin de la paella espagnole. Cuit dans du lait de coco et du curcuma, enveloppé dans des feuilles de bananier et cuit à la vapeur, il développe des arômes tropicaux uniques. Le riz gluant philippin (malagkit) utilisé pour ce plat est cultivé dans les terrasses rizicoles des Cordillères — classées au Patrimoine Mondial UNESCO en 1995. Les terrasses d\'Ifugao, sculptées il y a 2 000 ans dans les montagnes des Philippines, sont l\'une des plus grandes réalisations agraires humaines.'},en:{n:'Philippine Bringhe Rice',o:'Philippines (Ilocos Norte)',d:'Bringhe rice is the base of an ancient Philippine festive dish (bringhe), considered the Philippine equivalent of Spanish paella. Cooked in coconut milk and turmeric, wrapped in banana leaves and steamed, it develops unique tropical aromas. The Philippine glutinous rice (malagkit) used for this dish is cultivated in the rice terraces of the Cordilleras — listed as UNESCO World Heritage in 1995. The Ifugao terraces, carved 2,000 years ago into the Philippine mountains, are one of the greatest human agrarian achievements.'},region:'Asie',wiki:'Banaue Rice Terraces',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/2014_uncooked_Thai_glutinous_rice.jpg/500px-2014_uncooked_Thai_glutinous_rice.jpg',parfum:85,texture:88,cuisson:80,purete:82,rarete:78,type:'Glutineux'},
+  {id:22,e:'⚪',fr:{n:'Riz Patna (Long Grain Indien)',o:'Inde (Bihar)',d:'Le riz Patna, ou riz long grain indien ordinaire, tire son nom de la ville de Patna dans l\'État du Bihar. C\'est l\'un des plus anciens riz cultivés du monde — des grains de riz carbonisés datant de 2500 av. J.-C. ont été retrouvés dans des fouilles archéologiques à Chirand (Bihar). Le riz Patna est la base de l\'alimentation quotidienne de plus d\'un milliard d\'indiens. Long, fin, non parfumé, il est le riz de la cuisine courante : dal-chawal, biryani simple, riz frit. Très bon marché, il représente l\'essentiel des exportations rizicoles indiennes vers l\'Afrique et le Moyen-Orient.'},en:{n:'Patna Rice (Indian Long Grain)',o:'India (Bihar)',d:'Patna rice, or ordinary Indian long-grain rice, takes its name from the city of Patna in the state of Bihar. It is one of the oldest cultivated rices in the world — carbonized rice grains dating from 2,500 BC were found in archaeological excavations at Chirand (Bihar). Patna rice is the daily food base of over one billion Indians. Long, thin, unfragrant, it is the rice of everyday cooking: dal-chawal, simple biryani, fried rice. Very affordable, it represents the bulk of Indian rice exports to Africa and the Middle East.'},region:'Asie',wiki:'Patna rice',wt:'',parfum:58,texture:72,cuisson:90,purete:80,rarete:8,type:'Long'},
+  {id:23,e:'🌊',fr:{n:'Riz Arroz Agulha (Portugal)',o:'Portugal (Ribatejo / Alentejo)',d:'L\'Arroz Agulha ("riz aiguille" en portugais) est le riz long grain cultivé dans les vallées du Tage et du Sado au Portugal depuis le XVe siècle. Le Portugal est l\'un des plus grands consommateurs de riz par habitant en Europe (16 kg/an). L\'Arroz Agulha est la base des grands plats nationaux portugais : arroz de marisco (riz aux fruits de mer), arroz de pato (riz au canard), cabidela (riz au poulet au sang). Sa texture après cuisson est légèrement collante et fondante, absorbant parfaitement les sauces riches. La région de Comporta produit un riz IGP de grande qualité apprécié des chefs lisboètes.'},en:{n:'Arroz Agulha (Portuguese Rice)',o:'Portugal (Ribatejo / Alentejo)',d:'Arroz Agulha ("needle rice" in Portuguese) is the long-grain rice cultivated in the Tagus and Sado valleys of Portugal since the 15th century. Portugal is one of Europe\'s largest per capita rice consumers (16 kg/year). Arroz Agulha is the base of Portugal\'s great national dishes: arroz de marisco (seafood rice), arroz de pato (duck rice), cabidela (blood chicken rice). Its post-cooking texture is slightly sticky and melting, perfectly absorbing rich sauces. The Comporta region produces a high-quality PGI rice prized by Lisbon chefs.'},region:'Europe',wiki:'Portuguese rice',wt:'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Rice_and_beans%2C_Hotel_in_Itatiaia.jpeg/500px-Rice_and_beans%2C_Hotel_in_Itatiaia.jpeg',parfum:72,texture:82,cuisson:88,purete:80,rarete:45,type:'Long'},
+  {id:24,e:'🏔️',fr:{n:'Riz Himalayan Heritage (Riz Ayurvedique)',o:'Népal / Inde (Uttarakhand)',d:'Le riz Himalayan Heritage, aussi appelé "riz Ayurvédique" ou "Navara", est une variété médicinale cultivée dans les montagnes du Népal et de l\'Uttarakhand indien. En Ayurveda (médecine traditionnelle indienne), il est prescrit pour ses propriétés thérapeutiques : anti-inflammatoire, fortifiant nerveux, favorable à la digestion. Ses grains courts et rougeâtres ont un arôme unique de lait et de noix. Cultivé à plus de 1500 mètres d\'altitude dans des terrasses en pierre sans engrais chimiques. Reconnu par le gouvernement indien comme variété à préserver. Prix 30-60€/kg en Europe.'},en:{n:'Himalayan Heritage Rice (Ayurvedic)',o:'Nepal / India (Uttarakhand)',d:'Himalayan Heritage rice, also called "Ayurvedic rice" or "Navara", is a medicinal variety cultivated in the mountains of Nepal and Indian Uttarakhand. In Ayurveda (traditional Indian medicine), it is prescribed for its therapeutic properties: anti-inflammatory, nerve tonic, digestive. Its short, reddish grains have a unique aroma of milk and nuts. Cultivated above 1,500 meters altitude in stone terraces without chemical fertilizers. Recognized by the Indian government as a variety to preserve. Price €30-60/kg in Europe.'},region:'Asie',wiki:'Navara rice',wt:'',parfum:88,texture:82,cuisson:76,purete:95,rarete:92,type:'Spécial'},
+  {id:25,e:'🌙',fr:{n:'Riz Selenio',o:'Italie (Piémont)',d:'Le Selenio est la variété à risotto la plus récente des grandes rizes piémontaises, développée dans les années 1990 comme alternative moderne à l\'Arborio. Son grain long-large (un hybride entre riz long et riz rond) présente une transparence et une blancheur nacrée exceptionnelles. Plus facile à cuisiner que le Carnaroli, il pardonne mieux les erreurs de timing et de cuisson tout en donnant un résultat crémeux. Très apprécié par les cuisiniers amateurs pour sa polyvalence : risotto, timbales, salades de riz chaudes. Production concentrée en Piémont dans les provinces de Novara et Vercelli.'},en:{n:'Selenio Rice',o:'Italy (Piedmont)',d:'Selenio is the most recent risotto variety among the great Piedmontese rice varieties, developed in the 1990s as a modern alternative to Arborio. Its long-wide grain (a hybrid between long and round rice) has exceptional transparency and pearly whiteness. Easier to cook than Carnaroli, it is more forgiving with timing and cooking errors while producing creamy results. Highly appreciated by home cooks for its versatility: risotto, timbales, warm rice salads. Production concentrated in Piedmont in the provinces of Novara and Vercelli.'},region:'Europe',wiki:'Risotto',wt:'',parfum:70,texture:90,cuisson:92,purete:86,rarete:50,type:'Rond'}
+];
+
+const REGIONS=['Tous','Asie','Europe','Amériques'];
+const TYPES=['Tous','Long','Rond','Complet','Glutineux','Sauvage','Spécial'];
+
+// ===================== RECETTES =====================
+const RECETTES=[
+  {id:'risotto',emoji:'🍚',
+   fr:{titre:'Risotto Carnaroli Classique',origine:'Italie (Piémont)',intro:'Le risotto est la technique la plus noble de la cuisine du riz. La patience, le bouillon frémissant, l\'ajout progressif, la mantecatura finale — autant de gestes qui transforment un simple riz en un plat d\'une onctuosité incomparable. Le Carnaroli est ici indispensable.',difficulte:'Intermédiaire',temps:'30 min',riz:'Riz Carnaroli (ou Vialone Nano)',
+   ingredients:['320 g de riz Carnaroli','1,5 L de bouillon de légumes ou de poulet chaud','1 oignon jaune finement émincé','10 cl de vin blanc sec','60 g de beurre très froid (en dés)','80 g de parmesan râpé affiné 36 mois','3 c. à soupe d\'huile d\'olive extra vierge','Sel et poivre blanc du moulin'],
+   etapes:['Chauffer le bouillon à frémissement. Le maintenir chaud tout au long de la cuisson.','Dans une grande casserole, faire revenir l\'oignon dans l\'huile d\'olive à feu moyen-doux, 8 min, sans coloration.','Ajouter le riz et "toaster" 2 min en remuant : les grains doivent devenir translucides en périphérie.','Déglacer avec le vin blanc. Remuer jusqu\'à absorption complète.','Ajouter le bouillon louche par louche en remuant constamment. Attendre l\'absorption avant chaque ajout. Environ 18 min.','Hors du feu, mantecatura : incorporer le beurre froid et le parmesan en fouettant vigoureusement 1 min. Couvrir 2 min.','Servir immédiatement. Le risotto doit couler légèrement quand on incline l\'assiette ("all\'onda").'],
+   conseils:'Ne jamais rincer le riz avant cuisson : l\'amidon de surface est l\'âme du risotto. Le bouillon doit être chaud : un bouillon froid brise la montée en température et donne un résultat gommeux.',
+   accord:'Avec un Barolo ou un Gavi di Gavi blanc du Piémont. Ou un Chablis premier cru.'},
+   en:{titre:'Classic Carnaroli Risotto',origine:'Italy (Piedmont)',intro:'Risotto is the noblest rice cooking technique. The patience, the simmering broth, the gradual addition, the final mantecatura — all gestures that transform simple rice into a dish of incomparable smoothness. Carnaroli is essential here.',difficulte:'Intermediate',temps:'30 min',riz:'Carnaroli rice (or Vialone Nano)',
+   ingredients:['320 g Carnaroli rice','1.5 L warm vegetable or chicken broth','1 yellow onion, finely chopped','10 cl dry white wine','60 g very cold butter (diced)','80 g grated 36-month aged parmesan','3 tbsp extra virgin olive oil','Salt and white pepper'],
+   etapes:['Heat broth to a simmer. Keep warm throughout cooking.','In a large pan, cook onion in olive oil over medium-low heat, 8 min, without coloring.','Add rice and "toast" 2 min stirring: grains should become translucent at edges.','Deglaze with white wine. Stir until completely absorbed.','Add broth ladle by ladle, stirring constantly. Wait for absorption before each addition. About 18 min.','Off heat, mantecatura: incorporate cold butter and parmesan whisking vigorously 1 min. Cover 2 min.','Serve immediately. Risotto should flow slightly when plate is tilted ("all\'onda").'],
+   conseils:'Never rinse rice before cooking: surface starch is the soul of risotto. Broth must be hot: cold broth breaks the temperature rise and gives a gummy result.',
+   accord:'With a Barolo or white Gavi di Gavi from Piedmont. Or a Chablis premier cru.'}
+  },
+  {id:'biryani',emoji:'🍛',
+   fr:{titre:'Biryani Royal au Riz Basmati',origine:'Inde (Hyderabad)',intro:'Le biryani d\'Hyderabad (Dum Biryani) est l\'un des plats les plus complexes et parfumés de la cuisine indienne. La technique du "dum" (cuisson scellée à la vapeur) permet aux arômes du riz basmati, des épices et de la viande de se marier en une symphonie unique.',difficulte:'Avancé',temps:'2 heures',riz:'Riz Basmati extra long (1121 ou similaire)',
+   ingredients:['400 g de riz basmati extra long','600 g d\'agneau ou de poulet','200 g de yaourt grec','2 oignons dorés à l\'huile (barista)','1 c. à café de safran trempé dans 3 c. à soupe de lait chaud','2 c. à café de mélange biryani masala','1 bâton de cannelle, 4 clous de girofle, 3 cardamomes','Menthe fraîche, coriandre, jus de citron','Ghee (beurre clarifié) et huile neutre'],
+   etapes:['Rincer le basmati 5 fois puis tremper 30 min dans l\'eau froide.','Mariner la viande dans le yaourt, les épices et le safran pendant 1 heure.','Cuire le riz à 70% dans une grande quantité d\'eau bouillante salée (7 min). Égoutter.','Dans une cocotte, dorer la viande marinée. Ajouter les oignons et les herbes.','Déposer le riz par-dessus la viande en couches. Arroser de ghee et de lait safrané.','Sceller la cocotte avec une pâte farine-eau ou du papier alu. Cuire "dum" 25 min à feu très doux.','Briser le sceau à table. Mélanger délicatement avec une fourchette.'],
+   conseils:'Le secret du basmati est le trempage : il allonge les grains et réduit le temps de cuisson. La cuisson "dum" doit être à feu minimum — poser la cocotte sur une plaque de métal si nécessaire.',
+   accord:'Avec un raita au concombre et à la menthe, un chutney de mangue et un lassi salé.'},
+   en:{titre:'Royal Basmati Biryani',origine:'India (Hyderabad)',intro:'Hyderabad biryani (Dum Biryani) is one of the most complex and fragrant dishes of Indian cuisine. The "dum" technique (sealed steam cooking) allows the aromas of basmati rice, spices and meat to blend into a unique symphony.',difficulte:'Advanced',temps:'2 hours',riz:'Extra long basmati rice (1121 or similar)',
+   ingredients:['400 g extra long basmati rice','600 g lamb or chicken','200 g Greek yogurt','2 onions fried in oil (barista)','1 tsp saffron soaked in 3 tbsp warm milk','2 tsp biryani masala mix','1 cinnamon stick, 4 cloves, 3 cardamoms','Fresh mint, cilantro, lemon juice','Ghee (clarified butter) and neutral oil'],
+   etapes:['Rinse basmati 5 times then soak 30 min in cold water.','Marinate meat in yogurt, spices and saffron for 1 hour.','Cook rice to 70% in a large amount of boiling salted water (7 min). Drain.','In a casserole, brown the marinated meat. Add onions and herbs.','Layer rice over meat. Drizzle with ghee and saffron milk.','Seal casserole with flour-water paste or foil. Cook "dum" 25 min over very low heat.','Break seal at table. Mix gently with a fork.'],
+   conseils:'The basmati secret is soaking: it elongates grains and reduces cooking time. "Dum" cooking must be at minimum heat — place casserole on a metal plate if needed.',
+   accord:'With cucumber mint raita, mango chutney and salted lassi.'}
+  },
+  {id:'sushi',emoji:'🍣',
+   fr:{titre:'Riz à Sushi (Shari) Parfait',origine:'Japon',intro:'Le riz à sushi — appelé shari ou sumeshi — est l\'élément le plus important du sushi. Un maître sushi (itamae) passe des années à maîtriser la préparation du riz avant de toucher au poisson. La combinaison du Koshihikari, du vinaigre de riz et de la technique est un art à part entière.',difficulte:'Intermédiaire',temps:'45 min + repos',riz:'Riz Koshihikari (ou riz à sushi japonais)',
+   ingredients:['300 g de riz Koshihikari','300 ml d\'eau froide','5 cl de vinaigre de riz japonais','1,5 c. à soupe de sucre','1 c. à café de sel fin','1 morceau de kombu séché (5 cm)'],
+   etapes:['Rincer le riz 6 à 8 fois jusqu\'à ce que l\'eau soit claire. Égoutter 30 min.','Cuire avec l\'eau et le kombu dans une casserole à fond épais : porter à ébullition, couvrir, cuire 12 min à feu très doux. Repos 10 min couvercle fermé.','Préparer le mélange vinaigré : dissoudre sucre et sel dans le vinaigre chauffé. Refroidir.','Transférer le riz dans un grand récipient en bois (hangiri) ou saladier. Verser le vinaigre en filet.','Mélanger avec une spatule en bois en coupant (pas en tournant) pour ne pas écraser les grains. Éventer simultanément.','Le riz doit être brillant, légèrement collant, à température ambiante. Couvrir d\'un linge humide.'],
+   conseils:'Éventer le riz pendant l\'assaisonnement est crucial pour lui donner brillance et bonne texture. Le riz à sushi ne doit jamais être réfrigéré — le froid le durcit irrémédiablement.',
+   accord:'Avec du wasabi frais, du gari (gingembre mariné) et de la sauce soja. Thé vert sencha ou sake junmai.'},
+   en:{titre:'Perfect Sushi Rice (Shari)',origine:'Japan',intro:'Sushi rice — called shari or sumeshi — is the most important element of sushi. A sushi master (itamae) spends years mastering rice preparation before touching fish. The combination of Koshihikari, rice vinegar and technique is an art in itself.',difficulte:'Intermediate',temps:'45 min + resting',riz:'Koshihikari rice (or Japanese sushi rice)',
+   ingredients:['300 g Koshihikari rice','300 ml cold water','5 cl Japanese rice vinegar','1.5 tbsp sugar','1 tsp fine salt','1 piece dried kombu (5 cm)'],
+   etapes:['Rinse rice 6-8 times until water runs clear. Drain 30 min.','Cook with water and kombu in a heavy-bottomed pan: bring to boil, cover, cook 12 min over very low heat. Rest 10 min lid closed.','Prepare vinegar mix: dissolve sugar and salt in warmed vinegar. Cool.','Transfer rice to a large wooden bowl (hangiri) or salad bowl. Pour vinegar in a stream.','Mix with wooden spatula using cutting motion (not stirring) to avoid crushing grains. Fan simultaneously.','Rice should be shiny, slightly sticky, at room temperature. Cover with damp cloth.'],
+   conseils:'Fanning the rice while seasoning is crucial for shine and good texture. Sushi rice must never be refrigerated — cold hardens it irreversibly.',
+   accord:'With fresh wasabi, gari (pickled ginger) and soy sauce. Green sencha tea or junmai sake.'}
+  },
+  {id:'paella',emoji:'🥘',
+   fr:{titre:'Paella Valenciana au Riz Bomba',origine:'Espagne (Valence)',intro:'La paella est née dans les rizières de l\'Albufera de Valence au XIXe siècle comme plat de paysans. Son authenticité réside dans le riz Bomba, le socarrat (fond caramélisé) et la sobriété des ingrédients : pas de fruits de mer dans la vraie paella valenciana traditionnelle !',difficulte:'Intermédiaire',temps:'50 min',riz:'Riz Bomba de Valence (ou Sénia)',
+   ingredients:['300 g de riz Bomba','500 g de poulet fermier en morceaux','300 g de lapin en morceaux','100 g de haricots verts plats (bajoqueta)','100 g de haricots blanc frais (garrofó)','2 tomates mûres râpées','1 c. à café de paprika doux fumé','Safran (1 pincée trempée dans l\'eau)','Huile d\'olive valencienne, sel, romarin','900 ml d\'eau chaude ou bouillon léger'],
+   etapes:['Chauffer l\'huile dans la paellera. Dorer le poulet et le lapin sur toutes faces, 15 min.','Ajouter les haricots verts et les garrofons. Faire revenir 5 min.','Ajouter la tomate râpée. Cuire jusqu\'à évaporation totale (sofrito).','Ajouter le paprika et l\'eau chaude safranée. Saler. Porter à ébullition vive.','Répartir le riz en pluie de manière uniforme. Ne plus remuer.','Cuire à feu vif 5 min, puis moyen 12 min, puis fort 2 min pour le socarrat.','Retirer du feu. Reposer sous papier journal 5 min avant de servir.'],
+   conseils:'Le socarrat — fond légèrement caramélisé-croustillant — est le signe de réussite. On l\'entend grésiller. Ne jamais remuer le riz une fois ajouté, et cuire à découvert : le riz doit absorber, pas bouillir.',
+   accord:'Avec un Garnacha rosé de Valencia ou une Horchata de Chufa bien fraîche.'},
+   en:{titre:'Valenciana Paella with Bomba Rice',origine:'Spain (Valencia)',intro:'Paella was born in the rice fields of the Albufera of Valencia in the 19th century as a peasant dish. Its authenticity lies in Bomba rice, the socarrat (caramelized bottom) and the sobriety of ingredients: no seafood in the true traditional Valenciana paella!',difficulte:'Intermediate',temps:'50 min',riz:'Valencia Bomba rice (or Sénia)',
+   ingredients:['300 g Bomba rice','500 g free-range chicken pieces','300 g rabbit pieces','100 g flat green beans (bajoqueta)','100 g fresh white beans (garrofó)','2 ripe grated tomatoes','1 tsp smoked sweet paprika','Saffron (1 pinch soaked in water)','Valencian olive oil, salt, rosemary','900 ml hot water or light broth'],
+   etapes:['Heat oil in paellera. Brown chicken and rabbit on all sides, 15 min.','Add green beans and garrofons. Sauté 5 min.','Add grated tomato. Cook until completely evaporated (sofrito).','Add paprika and hot saffron water. Salt. Bring to a vigorous boil.','Scatter rice evenly like rain. Do not stir.','Cook on high 5 min, then medium 12 min, then high 2 min for socarrat.','Remove from heat. Rest under newspaper 5 min before serving.'],
+   conseils:'The socarrat — slightly caramelized-crispy bottom — is the sign of success. You can hear it sizzle. Never stir rice once added, and cook uncovered: rice must absorb, not boil.',
+   accord:'With a Valencia Garnacha rosé or a well-chilled Horchata de Chufa.'}
+  },
+  {id:'mangosticky',emoji:'🥭',
+   fr:{titre:'Mango Sticky Rice (Khao Niao Mamuang)',origine:'Thaïlande',intro:'Le Khao Niao Mamuang est le dessert thaïlandais le plus célèbre dans le monde. Cette alliance du riz gluant cuit à la vapeur, du lait de coco sucré-salé et de la mangue dorée Nam Dok Mai est une expérience sensorielle inoubliable. Simple en apparence, il requiert la maîtrise du riz gluant.',difficulte:'Facile',temps:'50 min (+ 3h trempage)',riz:'Riz gluant thaïlandais (Khao Niao)',
+   ingredients:['250 g de riz gluant (Khao Niao)','400 ml de lait de coco entier','4 c. à soupe de sucre de palme (ou de canne)','1 c. à café de sel fin','2 mangues Nam Dok Mai bien mûres (ou Ataulfo)','1 c. à soupe de graines de sésame grillées','Feuilles de menthe (décor)'],
+   etapes:['Faire tremper le riz gluant dans l\'eau froide au moins 3 heures (idéalement une nuit).','Égoutter et cuire à la vapeur dans un panier en bambou ou passoire, 25-30 min, jusqu\'à ce que les grains soient translucides et collants.','Pendant la cuisson : mélanger 300 ml de lait de coco, le sucre et le sel. Chauffer doucement sans bouillir.','Verser le mélange lait de coco sur le riz encore chaud. Mélanger et laisser absorber 15 min.','Préparer la sauce : chauffer 100 ml de lait de coco avec 1 pincée de sel. Réserver.','Peler et trancher les mangues. Dresser le riz gluant, les mangues, arroser de sauce. Parsemer de sésame.'],
+   conseils:'La qualité de la mangue est primordiale : elle doit être sucrée, fibreuse et parfumée. La mangue Nam Dok Mai est irremplaçable mais la mangue Ataulfo mexicaine s\'en approche. Servir tiède, pas froid.',
+   accord:'Avec un thé thaï glacé (cha yen) ou un jus de tamarin frais.'},
+   en:{titre:'Mango Sticky Rice (Khao Niao Mamuang)',origine:'Thailand',intro:'Khao Niao Mamuang is the most famous Thai dessert in the world. This combination of steamed sticky rice, sweet-salty coconut milk and golden Nam Dok Mai mango is an unforgettable sensory experience. Simple in appearance, it requires mastery of sticky rice.',difficulte:'Easy',temps:'50 min (+ 3h soaking)',riz:'Thai glutinous rice (Khao Niao)',
+   ingredients:['250 g glutinous rice (Khao Niao)','400 ml full-fat coconut milk','4 tbsp palm sugar (or cane)','1 tsp fine salt','2 ripe Nam Dok Mai mangoes (or Ataulfo)','1 tbsp toasted sesame seeds','Mint leaves (garnish)'],
+   etapes:['Soak glutinous rice in cold water at least 3 hours (ideally overnight).','Drain and steam in a bamboo basket or strainer, 25-30 min, until grains are translucent and sticky.','During cooking: mix 300 ml coconut milk, sugar and salt. Heat gently without boiling.','Pour coconut milk mixture over hot rice. Mix and let absorb 15 min.','Prepare sauce: heat 100 ml coconut milk with 1 pinch salt. Set aside.','Peel and slice mangoes. Plate sticky rice, mangoes, drizzle with sauce. Sprinkle with sesame.'],
+   conseils:'Mango quality is paramount: it must be sweet, fibrous and fragrant. Nam Dok Mai mango is irreplaceable but Mexican Ataulfo mango comes close. Serve warm, not cold.',
+   accord:'With Thai iced tea (cha yen) or fresh tamarind juice.'}
+  }
+];
+
+// ===================== HISTOIRE =====================
+const HISTOIRE=[
+  {emoji:'🌾',fr:{periode:'Origines — 10 000 ans d\'histoire',ere:'9 000 av. J.-C. – IIe millénaire',texte:'Le riz (Oryza sativa) a été domestiqué pour la première fois il y a environ 9 000 à 10 000 ans dans la vallée du Yangtsé en Chine. Des grains carbonisés retrouvés à Hemudu (Zhejiang) datent de 7 000 av. J.-C. L\'Inde a développé indépendamment sa propre variante (Oryza indica) dans les plaines du Gange vers 5 000 av. J.-C. Les deux grandes "familles" actuelles — japonica (grain court, Japon/Corée) et indica (grain long, Asie du Sud) — ont divergé il y a environ 7 000 ans. Le riz est aujourd\'hui l\'aliment de base de 3,5 milliards d\'êtres humains.'},en:{periode:'Origins — 10,000 Years of History',ere:'9,000 BC – 2nd millennium',texte:'Rice (Oryza sativa) was first domesticated approximately 9,000 to 10,000 years ago in the Yangtze Valley in China. Carbonized grains found at Hemudu (Zhejiang) date to 7,000 BC. India independently developed its own variant (Oryza indica) in the Ganges plains around 5,000 BC. The two major current "families" — japonica (short grain, Japan/Korea) and indica (long grain, South Asia) — diverged approximately 7,000 years ago. Rice is today the staple food of 3.5 billion humans.'}},
+  {emoji:'🏛️',fr:{periode:'Antiquité — Routes de la Soie et expansion',ere:'IIe s. av. J.-C. – VIIe s. ap. J.-C.',texte:'Alexandre le Grand découvre le riz en Inde (327 av. J.-C.) et l\'introduit en Occident. Le riz arrive en Mésopotamie et en Perse via les Routes de la Soie. Les Arabes l\'introduisent en Méditerranée (Sicile, Espagne) lors des conquêtes du VIIe-VIIIe siècle. Le mot "riz" vient de l\'arabe "ruzz", lui-même dérivé du tamoul "arisi". Les Grecs et Romains connaissent le riz mais ne le cultivent pas : Pline l\'Ancien le mentionne comme curiosité orientale. En Asie, les terrasses de riz d\'Ifugao (Philippines) sont sculptées il y a plus de 2 000 ans.'},en:{periode:'Antiquity — Silk Roads and Expansion',ere:'2nd c. BC – 7th c. AD',texte:'Alexander the Great discovers rice in India (327 BC) and introduces it to the West. Rice reaches Mesopotamia and Persia via the Silk Roads. Arabs introduce it to the Mediterranean (Sicily, Spain) during the 7th-8th century conquests. The word "rice" comes from Arabic "ruzz", itself derived from Tamil "arisi". Greeks and Romans know rice but don\'t cultivate it: Pliny the Elder mentions it as an Eastern curiosity. In Asia, the Ifugao rice terraces (Philippines) are carved over 2,000 years ago.'}},
+  {emoji:'🌍',fr:{periode:'Moyen Âge — Le riz entre en Europe',ere:'VIIIe – XVe siècle',texte:'Les Arabes transforment l\'agriculture méditerranéenne en introduisant le riz, l\'irrigation et les techniques de riziculture en Sicile et en Espagne. Les rizières de l\'Albufera de Valence sont créées dès le IXe siècle. En Italie, le riz apparaît en Lombardie et Piémont au XIVe siècle sous l\'influence arabe via la Sicile. Le premier risotto est cité dans un recueil de recettes de Bartolomeo Scappi (1570). Les terrasses de l\'Albufera produisent la première paella au XIXe siècle. Le riz commence à nourrir l\'Europe du Sud.'},en:{periode:'Middle Ages — Rice Enters Europe',ere:'8th – 15th century',texte:'Arabs transform Mediterranean agriculture by introducing rice, irrigation and rice cultivation techniques in Sicily and Spain. The Albufera rice fields of Valencia are created as early as the 9th century. In Italy, rice appears in Lombardy and Piedmont in the 14th century under Arab influence via Sicily. The first risotto is cited in a recipe collection by Bartolomeo Scappi (1570). The Albufera terraces produce the first paella in the 19th century. Rice begins to feed southern Europe.'}},
+  {emoji:'🚢',fr:{periode:'XVe-XVIIIe s. — Mondialisation du riz',ere:'1490 – 1800',texte:'Les Portugais introduisent le riz en Afrique de l\'Ouest et en Amérique du Sud au XVe siècle. La traite négrière contribue dramatiquement à la diffusion du riz : les esclaves africains originaires des "Côtes du riz" (Sierra Leone, Guinée) apportent leurs savoirs rizicoles dans les marais de Caroline du Sud et Géorgie (1700). Les États-Unis développent une industrie rizicole florissante basée sur le travail servile. En Asie, les grandes famines de riz jalonnent l\'histoire — celle du Bengale (1943) tuera 2 à 3 millions de personnes.'},en:{periode:'15th-18th c. — Globalization of Rice',ere:'1490 – 1800',texte:'The Portuguese introduce rice to West Africa and South America in the 15th century. The slave trade dramatically contributes to rice\'s spread: enslaved Africans from the "Rice Coasts" (Sierra Leone, Guinea) bring their rice knowledge to the swamps of South Carolina and Georgia (1700). The United States develops a flourishing rice industry based on enslaved labor. In Asia, great rice famines punctuate history — the Bengal famine (1943) would kill 2 to 3 million people.'}},
+  {emoji:'🌱',fr:{periode:'XXe s. — Révolution Verte',ere:'1960 – 2000',texte:'La "Révolution verte" lancée par Norman Borlaug (Prix Nobel 1970) développe des variétés de riz nain à haut rendement (IR8, surnommé "riz miracle") à l\'Institut International de Recherche sur le Riz (IRRI) aux Philippines. Les rendements triplent en Asie entre 1965 et 1985, sauvant des centaines de millions de personnes de la famine. En contrepartie, l\'usage massif d\'engrais, pesticides et eau d\'irrigation pose des problèmes environnementaux majeurs. La biodiversité rizicole s\'effondre : de 100 000 variétés traditionnelles, on en cultive moins de 1 000 aujourd\'hui.'},en:{periode:'20th c. — Green Revolution',ere:'1960 – 2000',texte:'The "Green Revolution" launched by Norman Borlaug (Nobel Prize 1970) develops high-yield dwarf rice varieties (IR8, nicknamed "miracle rice") at the International Rice Research Institute (IRRI) in the Philippines. Yields triple in Asia between 1965 and 1985, saving hundreds of millions from famine. In return, massive use of fertilizers, pesticides and irrigation water poses major environmental problems. Rice biodiversity collapses: from 100,000 traditional varieties, fewer than 1,000 are cultivated today.'}},
+  {emoji:'⭐',fr:{periode:'XXIe s. — Renaissance des riz de terroir',ere:'2000 – aujourd\'hui',texte:'Comme le vin et le fromage, le riz connaît une renaissance gastronomique portée par les chefs étoilés et le mouvement Slow Food. Le riz Carnaroli, le Koshihikari de Niigata, le riz jasmin "award winner" de Thaïlande, le riz bleu de Chiang Mai atteignent des prix de 20 à 100€/kg. Les "riz patrimoniaux" (heritage rice) sont redécouverts et préservés. La FAO déclare 2004 "Année internationale du riz". Le Japon a inscrit sa culture du riz (washoku) au Patrimoine immatériel de l\'UNESCO en 2013. Le riz rouge de Camargue IGP symbolise cette renaissance en Europe.'},en:{periode:'21st c. — Revival of Terroir Rices',ere:'2000 – today',texte:'Like wine and cheese, rice is experiencing a gastronomic renaissance driven by starred chefs and the Slow Food movement. Carnaroli, Niigata Koshihikari, Thai "award winner" jasmine rice, Chiang Mai blue rice reach prices of €20 to €100/kg. "Heritage rices" are rediscovered and preserved. The FAO declares 2004 the "International Year of Rice". Japan inscribed its rice culture (washoku) on UNESCO\'s Intangible Cultural Heritage in 2013. Camargue IGP red rice symbolizes this revival in Europe.'}}
+];
+
+// ===================== QUIZ =====================
+const QUIZ=[
+  {q:{fr:'Le riz Koshihikari représente quel pourcentage de la production japonaise ?',en:'Koshihikari rice represents what percentage of Japanese production?'},a:{fr:['Plus de 35%','10%','50%','25%'],en:['More than 35%','10%','50%','25%']},c:0},
+  {q:{fr:'Pourquoi le riz glutineux est-il "gluant" sans contenir de gluten ?',en:'Why is glutinous rice "sticky" without containing gluten?'},a:{fr:['Il contient presque uniquement de l\'amylopectine','Il est traité à la vapeur sous pression','Il est riche en gluten naturel de riz','Sa cuisson libère une colle végétale'],en:['It contains almost exclusively amylopectin','It is steam-pressure treated','It is rich in natural rice gluten','Cooking releases a plant-based glue']},c:0},
+  {q:{fr:'Le "socarrat" dans la paella valenciana désigne :',en:'The "socarrat" in Valenciana paella refers to:'},a:{fr:['Le fond caramélisé croustillant du plat','L\'épice principale de la recette','Le type de riz utilisé','La technique de mélange du riz'],en:['The crispy caramelized bottom of the dish','The main spice in the recipe','The type of rice used','The rice mixing technique']},c:0},
+  {q:{fr:'Le riz noir interdit (Hei Mi) était autrefois réservé à :',en:'Forbidden black rice (Hei Mi) was once reserved for:'},a:{fr:['L\'Empereur de Chine','Les moines bouddhistes','Les guerriers samouraïs','Les marchands de la Route de la Soie'],en:['The Emperor of China','Buddhist monks','Samurai warriors','Silk Road merchants']},c:0},
+  {q:{fr:'Les terrasses de riz d\'Ifugao (Philippines) sont classées :',en:'The Ifugao rice terraces (Philippines) are listed as:'},a:{fr:['Patrimoine Mondial UNESCO','Patrimoine gastronomique de l\'ASEAN','Site historique national','Réserve de biosphère FAO'],en:['UNESCO World Heritage','ASEAN gastronomic heritage','National historic site','FAO biosphere reserve']},c:0},
+  {q:{fr:'Qu\'est-ce que la "mantecatura" dans la recette du risotto ?',en:'What is "mantecatura" in a risotto recipe?'},a:{fr:['L\'incorporation finale du beurre et du parmesan hors du feu','Le toastage initial du riz','La technique d\'ajout progressif du bouillon','Le choix du bouillon de cuisson'],en:['The final incorporation of butter and parmesan off heat','The initial toasting of rice','The technique of gradually adding broth','The choice of cooking broth']},c:0},
+  {q:{fr:'Le riz Bomba est cultivé dans quelle région naturelle espagnole ?',en:'Bomba rice is cultivated in which Spanish natural region?'},a:{fr:['L\'Albufera de Valence','Les Asturies','La Rioja','L\'Andalousie'],en:['The Albufera of Valencia','Asturias','La Rioja','Andalusia']},c:0},
+  {q:{fr:'Quel riz a obtenu le premier IGP européen accordé à un riz en 1996 ?',en:'Which rice received the first European PGI granted to a rice in 1996?'},a:{fr:['Le Vialone Nano (Vénétie)','Le Carnaroli (Piémont)','Le riz de Camargue (France)','L\'Arborio (Piémont)'],en:['Vialone Nano (Veneto)','Carnaroli (Piedmont)','Camargue rice (France)','Arborio (Piedmont)']},c:0},
+  {q:{fr:'Le riz Kalijira du Bangladesh est surnommé :',en:'Bangladesh Kalijira rice is nicknamed:'},a:{fr:['"Prince des riz"','"Or du Bengale"','"Perle du delta"','"Riz sacré"'],en:['"Prince of Rices"','"Gold of Bengal"','"Pearl of the delta"','"Sacred rice"']},c:0},
+  {q:{fr:'Quelle année la FAO a-t-elle déclarée "Année Internationale du Riz" ?',en:'In what year did the FAO declare the "International Year of Rice"?'},a:{fr:['2004','2010','1998','2015'],en:['2004','2010','1998','2015']},c:0}
+];
+
+// ===================== MES APPS =====================
+const MES_APPS=[
+  
+      {id:'6765604355',n:'Piments Peppers',e:'📰'},
+        {id:'6764502966',n:'Residences de Pouvoir',e:'📰'},
+        {id:'6764275412',n:'Chateaux Ile de France',e:'📰'},
+        {id:'6764087562',n:'Aeroports Mytiques',e:'📰'},
+        {id:'6764053375',n:'Gares Mytiques',e:'📰'},
+        {id:'6763987142',n:'Arcs de Triomphe',e:'📰'},
+        {id:'6763857843',n:'Grattes Ciels',e:'📰'},
+        {id:'6762006105',n:'Iconic Covers',e:'📰'},
+        {id:'6763507194',n:'Hotels RoofTop',e:'🏨'},
+        {id:'6762618424',n:'Ponts du Monde',e:'🌉'},{id:'6763076110',n:'Paquebots',e:'🚢'},{id:'6763069304',n:'Avions Légende',e:'✈️'},{id:'6763071567',n:'Voitures Légende',e:'🏎️'},{id:'6762077646',n:'Flip Board',e:'🟫'},{id:'6762632868',n:'Trains',e:'🚂'},{id:'6762823383',n:'Châteaux Loire',e:'🏰'},{id:'6762598304',n:'Mers & Océans',e:'🌊'},{id:'6762594201',n:'Détroits',e:'🗺️'},{id:'6762558969',n:'ColorCode',e:'🎨'},{id:'6762552826',n:'Lexigo',e:'🔤'},{id:'6762542395',n:'Conquêtes',e:'⚖️'},{id:'6762522136',n:'Dynasties Chine',e:'🐉'},{id:'6762452564',n:'Dynasties Russie',e:'🦅'},{id:'6762370541',n:'États-Unis',e:'🗽'},{id:'6762091681',n:'Bataille Navale',e:'⚓'},{id:'6762098486',n:'Familles Royales',e:'👑'},{id:'6762263227',n:'Leaders EU',e:'🏛️'},{id:'6762346365',n:'Pays UE',e:'🇪🇺'},{id:'6762256169',n:'Présidents US',e:'🦅'},{id:'6762076518',n:'Dames',e:'⬛'},{id:'6761993002',n:'Comédie Fr.',e:'🎭'},{id:'6761769529',n:'Institut France',e:'🏛️'},{id:'6761324444',n:'Présidents FR',e:'🗼'},{id:'6761709149',n:'Saint-Denis',e:'⛪'},{id:'6761685637',n:'Arbres France',e:'🌳'},{id:'6761363063',n:'Sénat',e:'🏛️'},{id:'6761656628',n:'Compositeurs',e:'🎼'},{id:'6761374601',n:'Maréchaux',e:'⚔️'},{id:'6761322546',n:'Rois de France',e:'👑'},{id:'6761361079',n:'Assemblée',e:'🏛️'},{id:'6761335268',n:'Panthéon',e:'🏛️'},{id:'1483084001',n:'Belote Calc',e:'🃏'},{id:'6760751055',n:'Cimetières',e:'🕯️'},{id:'1481989301',n:'Tarots Calc',e:'🔮'},{id:'6761334922',n:'Académie Fr.',e:'📚'},{id:'6761293938',n:'Scènes Paris',e:'🎪'},{id:'6760890465',n:'Musées Paris',e:'🖼️'},{id:'6760929391',n:'Théâtres Paris',e:'🎭'},{id:'6760617965',n:'MesRestaurants',e:'🍽️'},{id:'6760126279',n:'Cave Manager',e:'🍷'},{id:'6759219383',n:'Frigo Manager',e:'🧊'},{id:'1475884625',n:'Toi ou Moi',e:'💕'}
+];
+
+// ===================== STATE =====================
+let lang='fr',currentRegion='Tous',currentSearch='',currentTab='list';
+let quizIdx=0,quizScore=0,quizAnswered=false;
+let mapInitialized=false,leafletMap=null;
+
+// ===================== LANG =====================
+function toggleLang(){
+  lang=lang==='fr'?'en':'fr';
+  document.querySelector('.lang-btn').textContent=lang==='fr'?'🇬🇧':'🇫🇷';
+  document.getElementById('appTitleEl').textContent=lang==='fr'?'🌾 Riz du Monde':'🌾 Rice of the World';
+  document.getElementById('searchInput').placeholder=lang==='fr'?'Rechercher un riz...':'Search a rice...';
+  filterCards();
+  if(currentTab==='rank') renderRank();
+  if(currentTab==='recettes') renderRecettes();
+  if(currentTab==='histoire') renderHistoire();
+  if(currentTab==='quiz') renderQuiz();
+}
+
+// ===================== TABS =====================
+function switchTab(tab,el){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  el.classList.add('active');
+  currentTab=tab;
+  var map2={'list':'listView','rank':'rankView','map':'mapView','recettes':'recettesView','histoire':'histoireView','quiz':'quizView','apps':'appsView'};
+  ['listView','rankView','mapView','recettesView','histoireView','quizView','appsView'].forEach(function(v){
+    var e2=document.getElementById(v);
+    if(v===map2[tab]){
+      if(v==='listView'||v==='mapView'){e2.style.display='flex';e2.style.flexDirection='column';}
+      else e2.classList.remove('hidden');
+    } else {
+      if(v==='listView'||v==='mapView') e2.style.display='none';
+      else e2.classList.add('hidden');
+    }
+  });
+  if(tab==='rank') renderRank();
+  if(tab==='map'){setTimeout(initMap,50);if(mapInitialized)setTimeout(function(){leafletMap.invalidateSize();},300);}
+  if(tab==='recettes') renderRecettes();
+  if(tab==='histoire') renderHistoire();
+  if(tab==='quiz') renderQuiz();
+  if(tab==='apps') renderApps();
+}
+
+// ===================== CHIPS =====================
+function buildChips(){
+  document.getElementById('chipsContainer').innerHTML=
+    REGIONS.map(function(r){return '<button class="chip'+(r==='Tous'?' active':'')+'" onclick="setRegion(\''+r+'\',this)">'+r+'</button>';}).join('');
+}
+function setRegion(r,el){
+  currentRegion=r;
+  document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');
+  filterCards();
+}
+
+// ===================== CARDS =====================
+function filterCards(){
+  currentSearch=document.getElementById('searchInput').value.toLowerCase();
+  var list=RIZ.filter(function(c){
+    var nm=c[lang].n.toLowerCase()+c[lang].o.toLowerCase();
+    return (currentRegion==='Tous'||c.region===currentRegion)&&(!currentSearch||nm.includes(currentSearch));
+  });
+  renderCards(list);
+}
+function renderCards(list){
+  document.getElementById('cardsContainer').innerHTML='<div class="cards">'+list.map(function(c){
+    var d=c[lang];
+    return '<div class="card" onclick="openDetail('+c.id+')">'
+      +'<div class="riz-img-wrap" id="imgwrap-'+c.id+'">'
+      +'<img class="riz-img loading" id="img-'+c.id+'" alt="'+d.n+'">'
+      +'</div>'
+      +'<div class="card-info">'
+      +'<div class="card-name">'+d.n+'</div>'
+      +'<div class="card-origin">'+c.e+' '+d.o+'</div>'
+      +'<div class="arome-bar"><div class="arome-fill" style="width:'+c.parfum+'%"></div></div>'
+      +'<div class="card-badge">'+c.type+' · '+c.region+'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('')+'</div>';
+  list.forEach(function(c){
+    var el=document.getElementById('img-'+c.id);
+    if(el) loadImg(c,el);
+  });
+}
+
+// ===================== IMAGE =====================
+var imgCache={};
+var imgQueue=[];
+var imgBusy=false;
+
+function applyImg(el,src){
+  if(!el||!document.body.contains(el)) return;
+  el.src=src;el.classList.remove('loading');el.onerror=function(){};
+}
+function setFallback(el){
+  if(!el||!document.body.contains(el)) return;
+  var wrap=el.parentNode;
+  if(wrap){wrap.innerHTML='<span style="font-size:28px">🌾</span>';}
+}
+function queueImg(c,el){imgQueue.push({c:c,el:el});if(!imgBusy) processQueue();}
+function processQueue(){
+  if(!imgQueue.length){imgBusy=false;return;}
+  imgBusy=true;
+  var item=imgQueue.shift();var c=item.c;var el=item.el;
+  if(!document.body.contains(el)){processQueue();return;}
+  var apiUrl;
+  if(c.wt&&c.wt.indexOf('upload.wikimedia.org')!==-1){
+    var parts=c.wt.split('/');
+    var fname=decodeURIComponent(parts[parts.length-1].replace(/^\d+px-/,''));
+    apiUrl='https://commons.wikimedia.org/w/api.php?action=query&titles=File:'+encodeURIComponent(fname)+'&prop=imageinfo&iiprop=url&iiurlwidth=400&format=json&origin=*';
+  } else if(c.wt&&c.wt.length>0){
+    apiUrl='https://en.wikipedia.org/w/api.php?action=query&titles='+encodeURIComponent(c.wt)+'&prop=pageimages&pithumbsize=400&format=json&origin=*';
+  } else if(c.wiki){
+    apiUrl='https://en.wikipedia.org/w/api.php?action=query&titles='+encodeURIComponent(c.wiki)+'&prop=pageimages&pithumbsize=400&format=json&origin=*';
+  } else {setFallback(el);processQueue();return;}
+  fetch(apiUrl).then(function(r){return r.json();}).then(function(d){
+    var pg=Object.values(d.query.pages)[0];
+    var src=(pg&&pg.imageinfo&&pg.imageinfo[0]&&(pg.imageinfo[0].thumburl||pg.imageinfo[0].url))||(pg&&pg.thumbnail&&pg.thumbnail.source);
+    if(src){imgCache[c.id]=src;applyImg(el,src);}else setFallback(el);
+    processQueue();
+  }).catch(function(){setFallback(el);processQueue();});
+}
+
+function loadImg(c,el){
+  if(imgCache[c.id]){applyImg(el,imgCache[c.id]);return;}
+  var apiUrl;
+  if(c.wt&&c.wt.indexOf('upload.wikimedia.org')!==-1){
+    if(typeof CapacitorHttp!=='undefined'){
+      CapacitorHttp.get({url:c.wt,responseType:'arraybuffer'}).then(function(r2){
+        var b64='data:image/jpeg;base64,'+r2.data;imgCache[c.id]=b64;applyImg(el,b64);
+      }).catch(function(){setFallback(el);});
+    } else {imgCache[c.id]=c.wt;applyImg(el,c.wt);}
+    return;
+  } else if(c.wt&&c.wt.length>0){
+    apiUrl='https://en.wikipedia.org/w/api.php?action=query&titles='+encodeURIComponent(c.wt)+'&prop=pageimages&pithumbsize=400&format=json';
+  } else if(c.wiki){
+    apiUrl='https://en.wikipedia.org/w/api.php?action=query&titles='+encodeURIComponent(c.wiki)+'&prop=pageimages&pithumbsize=400&format=json';
+  } else return;
+  if(typeof CapacitorHttp!=='undefined'){
+    CapacitorHttp.get({url:apiUrl}).then(function(r){
+      var d=JSON.parse(r.data);
+      var pg=Object.values(d.query.pages)[0];
+      var src=(pg&&pg.imageinfo&&pg.imageinfo[0]&&(pg.imageinfo[0].thumburl||pg.imageinfo[0].url))||(pg&&pg.thumbnail&&pg.thumbnail.source);
+      if(src){
+        CapacitorHttp.get({url:src,responseType:'arraybuffer'}).then(function(r2){
+          var b64='data:image/jpeg;base64,'+r2.data;imgCache[c.id]=b64;applyImg(el,b64);
+        }).catch(function(){setFallback(el);});
+      } else setFallback(el);
+    }).catch(function(){setFallback(el);});
+  } else {queueImg(c,el);}
+}
+
+// ===================== DETAIL =====================
+function openDetail(id){
+  var c=RIZ.find(function(x){return x.id===id;});
+  if(!c) return;
+  var d=c[lang];
+  document.getElementById('detailTitle').textContent=d.n;
+  document.getElementById('detailBody').innerHTML=
+    '<div class="detail-img-container" id="detail-img-'+id+'"><span>🌾</span></div>'
+    +'<div class="detail-content">'
+    +'<div class="detail-meta">'
+    +'<div class="meta-tag">🌍 <span>'+d.o+'</span></div>'
+    +'<div class="meta-tag">📍 <span>'+c.region+'</span></div>'
+    +'<div class="meta-tag">🌾 <span>'+c.type+'</span></div>'
+    +'</div>'
+    +'<div class="profil-box">'
+    +[
+      [lang==='fr'?'Parfum':'Aroma','fill-parfum',c.parfum],
+      [lang==='fr'?'Texture':'Texture','fill-texture',c.texture],
+      [lang==='fr'?'Cuisson':'Cooking','fill-cuisson',c.cuisson],
+      [lang==='fr'?'Pureté':'Purity','fill-purete',c.purete],
+      [lang==='fr'?'Rareté':'Rarity','fill-rarete',c.rarete]
+    ].map(function(row){
+      return '<div class="profil-row">'
+        +'<div class="profil-label">'+row[0]+'</div>'
+        +'<div class="profil-bar"><div class="profil-fill '+row[1]+'" style="width:'+row[2]+'%"></div></div>'
+        +'<div class="profil-value">'+row[2]+'</div>'
+        +'</div>';
+    }).join('')
+    +'</div>'
+    +'<div class="detail-section"><h3>'+(lang==='fr'?'Description':'Description')+'</h3><p>'+d.d+'</p></div>'
+    +'</div>';
+  function applyDetailImg(src){
+    var w=document.getElementById('detail-img-'+id);
+    if(!w) return;
+    var img2=document.createElement('img');
+    img2.src=src;img2.style.cssText='width:100%;height:100%;object-fit:cover';
+    w.innerHTML='';w.appendChild(img2);
+  }
+  var detailApiUrl;
+  if(c.wt&&c.wt.indexOf('upload.wikimedia.org')!==-1){
+    if(typeof CapacitorHttp!=='undefined'){
+      CapacitorHttp.get({url:c.wt,responseType:'arraybuffer'}).then(function(r2){applyDetailImg('data:image/jpeg;base64,'+r2.data);}).catch(function(){});
+    } else {applyDetailImg(c.wt);}
+  } else if(c.wt&&c.wt.length>0){
+    detailApiUrl='https://en.wikipedia.org/w/api.php?action=query&titles='+encodeURIComponent(c.wt)+'&prop=pageimages&pithumbsize=800&format=json';
+  } else if(c.wiki){
+    detailApiUrl='https://en.wikipedia.org/w/api.php?action=query&titles='+encodeURIComponent(c.wiki)+'&prop=pageimages&pithumbsize=800&format=json';
+  }
+  if(detailApiUrl){
+    if(typeof CapacitorHttp!=='undefined'){
+      CapacitorHttp.get({url:detailApiUrl}).then(function(r){
+        var d2=JSON.parse(r.data);var pg=Object.values(d2.query.pages)[0];
+        var src=(pg&&pg.imageinfo&&pg.imageinfo[0]&&(pg.imageinfo[0].thumburl||pg.imageinfo[0].url))||(pg&&pg.thumbnail&&pg.thumbnail.source);
+        if(!src) return;
+        CapacitorHttp.get({url:src,responseType:'arraybuffer'}).then(function(r2){applyDetailImg('data:image/jpeg;base64,'+r2.data);}).catch(function(){});
+      }).catch(function(){});
+    } else {
+      fetch(detailApiUrl+'&origin=*').then(function(r){return r.json();}).then(function(d2){
+        var pg=Object.values(d2.query.pages)[0];
+        var src=(pg&&pg.imageinfo&&pg.imageinfo[0]&&(pg.imageinfo[0].thumburl||pg.imageinfo[0].url))||(pg&&pg.thumbnail&&pg.thumbnail.source);
+        if(src) applyDetailImg(src);
+      }).catch(function(){});
+    }
+  }
+  var dv=document.getElementById('detailView');
+  dv.style.display='flex';dv.style.flexDirection='column';
+}
+function closeDetail(){document.getElementById('detailView').style.display='none';}
+
+// ===================== RANKING =====================
+function renderRank(){
+  var sorted=[].concat(RIZ).sort(function(a,b){return b.parfum-a.parfum;});
+  document.getElementById('rankList').innerHTML=sorted.map(function(c,i){
+    var d=c[lang];
+    return '<div class="rank-item" onclick="openDetail('+c.id+')">'
+      +'<div class="rank-num'+(i<3?' top3':'')+'">'+( i+1)+'</div>'
+      +'<div class="rank-emoji">'+c.e+'</div>'
+      +'<div class="rank-info"><div class="rank-name">'+d.n+'</div><div class="rank-region">'+d.o+'</div></div>'
+      +'<div class="rank-bar-wrap">'
+      +'<div class="rank-bar"><div class="rank-fill" style="width:'+c.parfum+'%"></div></div>'
+      +'<div class="rank-score">'+c.parfum+'/100</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ===================== MAP =====================
+function initMap(){
+  if(mapInitialized) return;
+  mapInitialized=true;
+  leafletMap=L.map('map',{zoomControl:false,attributionControl:false}).setView([20,80],2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18}).addTo(leafletMap);
+  L.control.zoom({position:'bottomright'}).addTo(leafletMap);
+  RIZ.forEach(function(c){
+    var d=c[lang];
+    var icon=L.divIcon({html:'<div style="font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8))">🌾</div>',className:'',iconSize:[28,28],iconAnchor:[14,14]});
+    var m=L.marker([c.lat,c.lng],{icon:icon}).addTo(leafletMap);
+    m.bindPopup(
+      '<div class="popup-name">'+d.n+'</div>'
+      +'<div style="font-size:12px;color:var(--muted)">📍 '+d.o+' · '+c.type+'</div>'
+      +'<button class="popup-btn" onclick="openDetail('+c.id+')">'+(lang==='fr'?'Voir la fiche':'View details')+'</button>'
+    );
+  });
+  setTimeout(function(){leafletMap.invalidateSize();},100);
+}
+
+// ===================== RECETTES =====================
+function renderRecettes(){
+  document.getElementById('recettesList').innerHTML=
+    '<div style="padding:12px 12px 4px"><p style="font-size:12px;color:var(--muted);font-style:italic;padding:0 4px 10px">'
+    +(lang==='fr'?'5 recettes emblématiques au riz du monde':'5 iconic rice recipes from around the world')
+    +'</p></div>'
+    +RECETTES.map(function(r){
+      var d=r[lang];
+      return '<div class="recette-card" onclick="openRecette(\''+r.id+'\')"><div class="recette-card-header">'
+        +'<div class="recette-emoji">'+r.emoji+'</div>'
+        +'<div><div class="recette-title">'+d.titre+'</div><div class="recette-origin">'+d.origine+'</div></div>'
+        +'</div>'
+        +'<div class="recette-meta">'
+        +'<div>⏱ <span>'+d.temps+'</span></div>'
+        +'<div>📊 <span>'+d.difficulte+'</span></div>'
+        +'<div>🌾 <span>'+d.riz.substring(0,26)+(d.riz.length>26?'…':'')+'</span></div>'
+        +'</div></div>';
+    }).join('');
+}
+function openRecette(id){
+  var r=RECETTES.find(function(x){return x.id===id;});
+  if(!r) return;
+  var d=r[lang];
+  document.getElementById('recetteTitleEl').textContent=r.emoji+' '+d.titre;
+  document.getElementById('recetteBody').innerHTML=
+    '<div class="recette-section"><p style="font-size:14px;color:var(--text);line-height:1.7;font-style:italic">'+d.intro+'</p></div>'
+    +'<div class="recette-section"><h3>'+(lang==='fr'?'Riz recommandé':'Recommended Rice')+'</h3>'
+    +'<div style="background:var(--bg3);border-left:3px solid var(--gold);padding:8px 12px;border-radius:0 6px 6px 0;font-size:13px;color:var(--gold2)">🌾 '+d.riz+'</div></div>'
+    +'<div class="recette-section"><h3>'+(lang==='fr'?'Ingrédients':'Ingredients')+'</h3>'
+    +d.ingredients.map(function(i){return '<div class="ingredient-item">'+i+'</div>';}).join('')+'</div>'
+    +'<div class="recette-section"><h3>'+(lang==='fr'?'Préparation':'Preparation')+'</h3>'
+    +d.etapes.map(function(e,i){return '<div class="step-item"><div class="step-num">'+(i+1)+'</div><div class="step-text">'+e+'</div></div>';}).join('')+'</div>'
+    +'<div class="recette-section"><h3>'+(lang==='fr'?'Conseil':'Tip')+'</h3><div class="conseil-box">'+d.conseils+'</div></div>'
+    +'<div class="recette-section"><h3>'+(lang==='fr'?'Accord':'Pairing')+'</h3><p style="font-size:14px;color:var(--text)">'+d.accord+'</p></div>';
+  var rv=document.getElementById('recetteDetail');
+  rv.style.display='flex';rv.style.flexDirection='column';
+}
+function closeRecette(){document.getElementById('recetteDetail').style.display='none';}
+
+// ===================== HISTOIRE =====================
+function renderHistoire(){
+  document.getElementById('histoireContainer').innerHTML=
+    '<p style="font-size:12px;color:var(--muted);font-style:italic;padding:0 4px 12px">'
+    +(lang==='fr'?'De la vallée du Yangtsé à nos assiettes, 10 000 ans d\'histoire.':'From the Yangtze Valley to our plates, 10,000 years of history.')
+    +'</p>'
+    +HISTOIRE.map(function(h){
+      var d=h[lang];
+      return '<div class="histoire-card">'
+        +'<div class="histoire-card-header">'
+        +'<div class="histoire-emoji">'+h.emoji+'</div>'
+        +'<div><div class="histoire-period">'+d.periode+'</div><div class="histoire-era">'+d.ere+'</div></div>'
+        +'</div>'
+        +'<p class="histoire-text">'+d.texte+'</p>'
+        +'</div>';
+    }).join('');
+}
+
+// ===================== QUIZ =====================
+function renderQuiz(){
+  var cont=document.getElementById('quizContainer');
+  if(quizIdx>=QUIZ.length){
+    cont.innerHTML='<div class="quiz-score-bar"><div class="quiz-score-num">'+quizScore+'/'+QUIZ.length+'</div>'
+    +'<div class="quiz-score-label">'+(lang==='fr'?'Score final · Félicitations !':'Final score · Congratulations!')+'</div></div>'
+    +'<button class="quiz-reset" onclick="resetQuiz()">'+(lang==='fr'?'🔄 Recommencer':'🔄 Play again')+'</button>';
+    return;
+  }
+  var q=QUIZ[quizIdx];
+  cont.innerHTML='<div class="quiz-score-bar"><div class="quiz-score-num">'+(quizIdx+1)+'/'+QUIZ.length+'</div>'
+    +'<div class="quiz-score-label">'+(lang==='fr'?'Question · Score : '+quizScore:'Question · Score: '+quizScore)+'</div></div>'
+    +'<div class="quiz-question"><div class="quiz-q-text">'+q.q[lang]+'</div>'
+    +'<div class="quiz-answers">'+q.a[lang].map(function(a,i){return '<button class="quiz-answer" onclick="answerQuiz('+i+',this)">'+a+'</button>';}).join('')+'</div>'
+    +'<button class="quiz-next" id="quizNext" onclick="nextQuestion()">'+(lang==='fr'?'Question suivante ➔':'Next question ➔')+'</button></div>';
+}
+function answerQuiz(idx,el){
+  if(quizAnswered) return;
+  quizAnswered=true;
+  var q=QUIZ[quizIdx];
+  document.querySelectorAll('.quiz-answer').forEach(function(b,i){
+    b.classList.add('revealed');
+    if(i===q.c) b.classList.add('correct');
+    else if(i===idx) b.classList.add('wrong');
+  });
+  if(idx===q.c) quizScore++;
+  document.getElementById('quizNext').style.display='block';
+}
+function nextQuestion(){quizIdx++;quizAnswered=false;renderQuiz();}
+function resetQuiz(){quizIdx=0;quizScore=0;quizAnswered=false;renderQuiz();}
+
+// ===================== APPS =====================
+function renderApps(){
+  document.getElementById('appsList').innerHTML=
+    '<div class="apps-section-title">🌾 Riz du Monde</div>'
+    +'<div style="padding:10px 16px 14px;font-size:13px;color:var(--muted);font-style:italic">'
+    +(lang==='fr'?'Découvrez les autres applications de Michel Garlandat :':'Discover other apps by Michel Garlandat:')
+    +'</div><div class="apps-grid">'
+    +MES_APPS.map(function(a){
+      return '<div class="app-item" onclick="openApp(\''+a.id+'\')"><div class="app-icon" id="appicon-'+a.id+'"><span>'+a.e+'</span></div><div class="app-name">'+a.n+'</div></div>';
+    }).join('')+'</div>';
+  MES_APPS.forEach(function(a){
+    var cb='itcb'+a.id;
+    window[cb]=function(d){
+      var w=document.getElementById('appicon-'+a.id);
+      if(!w) return;
+      var img=document.createElement('img');
+      img.src=d.results[0].artworkUrl60;
+      w.innerHTML='';w.appendChild(img);
+    };
+    var s=document.createElement('script');
+    s.src='https://itunes.apple.com/lookup?id='+a.id+'&callback='+cb;
+    document.body.appendChild(s);
+  });
+}
+function openApp(id){window.open('https://apps.apple.com/app/id'+id,'_system');}
+
+// ===================== COORDONNÉES PAR VARIÉTÉ =====================
+// Ajout des coordonnées lat/lng manquantes dans les données
+RIZ[0].lat=30.0;RIZ[0].lng=76.0;   // Basmati - Punjab
+RIZ[1].lat=15.0;RIZ[1].lng=101.0;  // Jasmin - Thaïlande
+RIZ[2].lat=45.4;RIZ[2].lng=8.3;    // Arborio - Piémont
+RIZ[3].lat=30.3;RIZ[3].lng=120.2;  // Riz noir - Zhejiang
+RIZ[4].lat=43.5;RIZ[4].lng=4.6;    // Riz rouge Camargue
+RIZ[5].lat=37.3;RIZ[5].lng=138.6;  // Koshihikari - Niigata
+RIZ[6].lat=45.3;RIZ[6].lng=8.4;    // Carnaroli - Vercelli
+RIZ[7].lat=17.0;RIZ[7].lng=102.0;  // Glutineux - Laos
+RIZ[8].lat=47.0;RIZ[8].lng=-83.0;  // Riz sauvage - Grands Lacs
+RIZ[9].lat=43.4;RIZ[9].lng=4.5;    // Camargue blanc
+RIZ[10].lat=39.3;RIZ[10].lng=-0.4; // Bomba - Valencia
+RIZ[11].lat=44.0;RIZ[11].lng=8.0;  // Venere - Italie
+RIZ[12].lat=40.0;RIZ[12].lng=32.0; // Baldo - Turquie
+RIZ[13].lat=13.0;RIZ[13].lng=103.0;// Riz rouge Cambodge
+RIZ[14].lat=18.8;RIZ[14].lng=98.9; // Khao Hom Nil - Chiang Mai
+RIZ[15].lat=35.0;RIZ[15].lng=-92.0;// Long grain USA - Arkansas
+RIZ[16].lat=39.5;RIZ[16].lng=-0.3; // Originario - Valencia
+RIZ[17].lat=23.7;RIZ[17].lng=90.4; // Kalijira - Bangladesh
+RIZ[18].lat=35.0;RIZ[18].lng=138.0;// Brown rice - Japon
+RIZ[19].lat=45.4;RIZ[19].lng=10.9; // Vialone Nano - Vérone
+RIZ[20].lat=17.6;RIZ[20].lng=121.1;// Philippines - Ifugao
+RIZ[21].lat=25.6;RIZ[21].lng=85.0; // Patna - Bihar
+RIZ[22].lat=39.5;RIZ[22].lng=-8.5; // Arroz Agulha - Portugal
+RIZ[23].lat=30.3;RIZ[23].lng=78.5; // Himalayan - Uttarakhand
+RIZ[24].lat=45.4;RIZ[24].lng=8.6;  // Selenio - Piémont
+
+// ===================== INIT =====================
+window.openDetail=openDetail;
+buildChips();
+filterCards();
+</script>
+</body>
+</html>
